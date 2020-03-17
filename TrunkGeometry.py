@@ -4,17 +4,17 @@ import math
 import random
 import mathutils
 import os
-utilityScriptPath= os.path.join(os.path.dirname(os.path.abspath( __file__ )),"GeneralGeometry.py")
+utilityScriptPath= "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\GeneralGeometry.py"#os.path.join(os.path.dirname(os.path.abspath( __file__ )),"GeneralGeometry.py").replace("\\Scripting.blend",'')
 
 import importlib.util
 utilitySpec = importlib.util.spec_from_file_location("GeneralGeometry", utilityScriptPath)
 geo = importlib.util.module_from_spec(utilitySpec)
 utilitySpec.loader.exec_module(geo)
 
-branchScriptPath= os.path.join(os.path.dirname(os.path.abspath( __file__ )),"BranchGeometry.py")
+branchScriptPath= "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\BranchGeometry.py" #os.path.join(os.path.dirname(os.path.abspath( __file__ )),"BranchGeometry.py")
 branchSpec = importlib.util.spec_from_file_location("BranchGeometry", branchScriptPath)
-branchGeometry = importlib.util.module_from_spec(branchSpec)
-branchSpec.loader.exec_module(branchGeometry)
+bGeo = importlib.util.module_from_spec(branchSpec)
+branchSpec.loader.exec_module(bGeo)
 
 verts = []
 faces = []
@@ -68,7 +68,7 @@ def rotateVerticesOnZ(nrCircleVertexes,circleVertexes,angleRads):
 #scaleing
 
 #==============================================================
-nrCircleVertexes =60
+nrCircleVertexes = 60
 ray=2
 
 bm = bmesh.new()
@@ -77,26 +77,16 @@ matrix_world=(((1.0, 0.0, 0.0, 0.0),
         (0.0, 0.0, 1.0, 0.0),
         (0.0, 0.0, 0.0, 1.0)))
 
-deformities = geo.SmoothRandom((0, 2), 1, nrCircleVertexes)
+deformities = [] #geo.SmoothRandom((0, 2), 1, nrCircleVertexes)
 
 circle1 = geo.CalculateVertexDeformedCircle(nrCircleVertexes,ray,deformities)
-print(circle1)
-circle2 = geo.CalculateVertexDeformedCircle(nrCircleVertexes,ray,deformities)
-
-vec = (0, 1, 1)
-
-circle2 = translateVertices(nrCircleVertexes,circle2,vec,2)
-circle2 = rotateVerticesOnZ(nrCircleVertexes,circle2,math.pi/4)
-circle1 = translateVertices(nrCircleVertexes,circle1,(-1,-1,-2),3)
-
-print(circle1)
-print(circle2)
-verts.extend(circle1)
-verts.extend(circle2)
+fractalString = bGeo.generateFractalString(6)
+fractal = bGeo.drawFractalTest(fractalString,math.pi/6,circle1)
+for tCircle in fractal[0]:
+    verts.extend(tCircle)
 
 #=======================
-faces.extend(geo.CreateShapeOutOfCircleVertexes(nrCircleVertexes,verts))
-geo.CalculateCircleFace(nrCircleVertexes)
+faces.extend(fractal[1])
 # create mesh and object
 mymesh = bpy.data.meshes.new("myshape")
 myobject = bpy.data.objects.new("myshape", mymesh)

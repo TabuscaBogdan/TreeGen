@@ -3,7 +3,7 @@ import math
 import random
 import decimal
 import os
-utilityScriptPath= os.path.join(os.path.dirname(os.path.abspath( __file__ )),"GeneralGeometry.py")
+utilityScriptPath="C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\GeneralGeometry.py" #os.path.join(os.path.dirname(os.path.realpath( __file__ )),"GeneralGeometry.py").replace("\\Scripting.blend",'')
 
 import importlib.util
 utilitySpec = importlib.util.spec_from_file_location("GeneralGeometry", utilityScriptPath)
