@@ -5,24 +5,6 @@ import decimal
 
 #=============================== General Utility ======================================
 
-def SmoothRandom(bigInterval, littleIntervalSize, valuesNeeded, precision=1):
-    if(bigInterval[0]>=bigInterval[1]):
-        raise ValueError("Not a valid interval given")
-    if(bigInterval[1]-bigInterval[0]<littleIntervalSize):
-        raise ValueError("Little interval size is too large")
-
-    pivot = round(random.uniform(bigInterval[0]+littleIntervalSize/2,bigInterval[1]-littleIntervalSize/2),precision)
-    nr=0
-    smoothRandomNumbers=[]
-    while nr<valuesNeeded:
-        nr+=1
-        rngNumber= round(random.uniform(pivot-littleIntervalSize/2,pivot+littleIntervalSize/2),precision)
-        smoothRandomNumbers.append(rngNumber)
-        if((rngNumber+littleIntervalSize/2)<=bigInterval[1] and (rngNumber-littleIntervalSize/2)>=bigInterval[0]):
-            pivot=rngNumber
-
-    return smoothRandomNumbers
-
 def replace_at_index1(tup, ix, val):
     lst = list(tup)
     lst[ix] = val
@@ -84,8 +66,68 @@ def ConvertCirclesToVerts(circles):
         verts.extend(circle)
     return verts
 
-#=========================================================================================
 
+#======================================Findings==================================================
+def FindMaxRayOfDeformedCircle(deformedCircle):
+    circleLength = len(deformedCircle)
+    halfLength = int(circleLength/2)
+
+    maximum = CalculateDistanceBetweenTwoPoints(deformedCircle[0],deformedCircle[halfLength])
+    for i in range(1,halfLength):
+        distance = CalculateDistanceBetweenTwoPoints(deformedCircle[i],deformedCircle[i+halfLength])
+        if(distance>maximum):
+            maximum=distance
+    return maximum/2
+
+def FindMinRayOfDeformedCircle(deformedCircle):
+    circleLength = len(deformedCircle)
+    halfLength = int(circleLength/2)
+
+    maxRay = FindMaxRayOfDeformedCircle(deformedCircle)
+    minimum = CalculateDistanceBetweenTwoPoints(deformedCircle[0],deformedCircle[halfLength])
+    for i in range(1,halfLength):
+        distance = CalculateDistanceBetweenTwoPoints(deformedCircle[i],deformedCircle[i+halfLength])
+        if(distance<minimum):
+            minimum=distance
+    minRay = maxRay-(maxRay-minimum/2)
+    return minRay
+
+def FindCircleCenter(deformedCircle):
+    circleLength=len(deformedCircle)
+    halfLength = int(circleLength / 2)
+
+    maximumRay=FindMaxRayOfDeformedCircle(deformedCircle)
+
+    for i in range(1,halfLength):
+        distance = CalculateDistanceBetweenTwoPoints(deformedCircle[i],deformedCircle[i+halfLength])
+        if(distance==maximumRay*2):
+            centerX=(deformedCircle[i][0]+deformedCircle[i+halfLength][0]) / 2
+            centerY = (deformedCircle[i][1] + deformedCircle[i + halfLength][1]) / 2
+            centerZ = (deformedCircle[i][2] + deformedCircle[i + halfLength][2]) / 2
+            return tuple([centerX,centerY,centerZ])
+
+def FindCircleDeformities(deformedCircle):
+    circleLength=len(deformedCircle)
+
+    deformities=[]
+
+    center = FindCircleCenter(deformedCircle)
+    minRay = FindMinRayOfDeformedCircle(deformedCircle)
+
+    for i in range(0,circleLength):
+        distance = CalculateDistanceBetweenTwoPoints(center,deformedCircle[i])
+        deformities.append(distance-minRay)
+    return deformities
+
+
+
+#======================================Calculations==============================================
+
+def CalculateDistanceBetweenTwoPoints(Point1,Point2):
+    xdistance=(Point1[0]-Point2[0])**2
+    ydistance=(Point1[1]-Point2[1])**2
+    zdistance=(Point1[2]-Point2[2])**2
+    return math.sqrt(xdistance+ydistance+zdistance)
 
 def CalculateVertexDeformedCircle(nrCircleVertexes, ray, deformities):
     fullRotation = math.pi * 2
@@ -160,6 +202,7 @@ def CalculateResizedDeformedCircle(nrCircleVertexes,ray,precent,deformities=[]):
         circleVertexes.append(vertex)
     return circleVertexes
 
+
 def translateVertices(nrCircleVertexes,circleVertexes,vector,unit=1):
     movedVertices=[]
     for i in range(0, nrCircleVertexes):
@@ -168,6 +211,7 @@ def translateVertices(nrCircleVertexes,circleVertexes,vector,unit=1):
         z=circleVertexes[i][2] + vector[2]*unit
         movedVertices.append((x, y, z))
     return movedVertices
+
 
 #rotation
 matrix_world = (((1.0, 0.0, 0.0, 0.0),
@@ -221,4 +265,42 @@ def AddDirectionNoiseXY(position,tupleRayInterval,intervalDecimalNumber=1):
     newY = position[1]+randomUnit*math.cos(randomDegree)
 
     return tuple([newX,newY,position[2]])
+
+def SmoothRandom(bigInterval, littleIntervalSize, valuesNeeded, precision=1):
+    if(bigInterval[0]>=bigInterval[1]):
+        raise ValueError("Not a valid interval given")
+    if(bigInterval[1]-bigInterval[0]<littleIntervalSize):
+        raise ValueError("Little interval size is too large")
+
+    pivot = round(random.uniform(bigInterval[0]+littleIntervalSize/2,bigInterval[1]-littleIntervalSize/2),precision)
+    nr=0
+    smoothRandomNumbers=[]
+    while nr<valuesNeeded:
+        nr+=1
+        rngNumber= round(random.uniform(pivot-littleIntervalSize/2,pivot+littleIntervalSize/2),precision)
+        smoothRandomNumbers.append(rngNumber)
+        if((rngNumber+littleIntervalSize/2)<=bigInterval[1] and (rngNumber-littleIntervalSize/2)>=bigInterval[0]):
+            pivot=rngNumber
+
+    return smoothRandomNumbers
+
+#greater mutetionFactor means less noticeable mutations (always int>0)
+def MutateValues(values,mutationInterval,mutationFactor,mutationChance=0.5,precision=2):
+    nrValues = len(values)
+
+    for i in range(0,nrValues):
+        chance= round(random.uniform(0,1), 1)
+        if(chance>mutationChance):
+            maximumMutation = (mutationInterval[1]-mutationInterval[0])/mutationFactor
+            mutation = round(random.uniform(0,maximumMutation),precision)
+
+            signChance = random.choice([-1,1])
+            mutation = signChance*mutation
+
+            if(mutation+values[i]>=mutationInterval[0] and mutation+values[i]<=mutationInterval[1]):
+                values[i]+=mutation
+            else:
+                values[i]=mutation
+    return values
+
 

@@ -50,7 +50,7 @@ def CalculateLowerStump(nrCircleVertexes,ray,deformities,finese=0.1):
 def CalculateUpperStump(nrCircleVertexes,ray,deformities,lastLowerStumpCircle,abruptness=2,height=1,finese=0.1):
     logCurveLowerStump = 3
     logCurveStart = 2
-    logCurveStop = 1.5
+    logCurveStop = 1.4
 
     precents =[]
     for x in geo.drange(logCurveStart, logCurveStop, finese/2):
@@ -63,7 +63,10 @@ def CalculateUpperStump(nrCircleVertexes,ray,deformities,lastLowerStumpCircle,ab
     nrOfSmoothSteps=int(height/finese)
     heightStep=height/nrOfSmoothSteps
     rayReduction=(maxRay-minRay)/(nrOfSmoothSteps)
-    noise = random.randrange(1,3,1)
+
+    #TODO Find a better way to introduce noise
+    noise = random.randrange(2,4,1)
+
     smoothDeformities=deformities.copy()
 
     smoothCircles =[]

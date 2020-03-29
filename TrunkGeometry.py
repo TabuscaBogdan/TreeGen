@@ -35,18 +35,29 @@ def matmult(X,Y):
                     result[i][j] += X[i][k] * Y[k][j]
         return result
 
-def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIntervalTouple,randomIntervalDecimalNumber=1,):
+
+
+def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIntervalTouple,deformities,mutationChance,mutationFactor,randomIntervalDecimalNumber=1,):
     bodyCilynder=[]
     bodyCilynderFaces = []
     bodyCilynder.append(shape)
 
     nrCircle = initialCircle
 
-    for i in range(0,iterations):
-        currentPosition = geo.AddDirectionNoiseXY(currentPosition,randomIntervalTouple,randomIntervalDecimalNumber)
+    for i in range(1,iterations):
+        if(i%9==0):
+            currentPosition = geo.AddDirectionNoiseXY(currentPosition,randomIntervalTouple,randomIntervalDecimalNumber)
         currentPosition = geo.sum_touples(currentPosition, stepVector)
 
-        #shape = geo.CalculateResizedDeformedCircle(nrCircleVertexes,2,100-i,deformities)
+        maxDeformedCircleRay= geo.FindMaxRayOfDeformedCircle(shape)
+        minDeformedCircleRay= geo.FindMinRayOfDeformedCircle(shape)
+
+        mutationInterval =[0,maxDeformedCircleRay-minDeformedCircleRay]
+
+        deformities=geo.MutateValues(deformities,mutationInterval,mutationFactor,mutationChance,precision=2)
+
+        shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,99-i/50,deformities)
+
         newShapePlacement = geo.addVectorToVertsOnlyXY(currentPosition, shape)
 
         bodyCilynder.append(newShapePlacement)
@@ -54,7 +65,8 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
         nrCircle += 1
         bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), initialCircle, nrCircle))
         initialCircle = nrCircle
-
+    #remove the initial stump face
+    bodyCilynder.pop(0)
     return [bodyCilynder,bodyCilynderFaces]
 
 
@@ -63,6 +75,8 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
 nrCircleVertexes=60
 circleRay=2
 stumpAbruptness = 2
+barkMutationChance=0.5
+barkMutationFactor=4 #Lower factor = more noticeable, Greater = less noticeable
 #================
 #fractalString = bGeo.generateFractalString(6)
 #fractal = bGeo.drawFractalTest(fractalString,math.pi/6,circle1)
@@ -77,9 +91,13 @@ faces.extend(sGeo.CalculateStumpFaces(stumpCircles))
 faces.append(geo.CalculateCircleFace(nrCircleVertexes,verts))
 #=================
 
-circle1 = stumpCircles[-1]
+circle = stumpCircles[-1]
 
-trunk = GrowTrunk(2,(0,0,circle1[0][2]),(0,0,0.2),circle1,len(stumpCircles),(-0.2,0.2),1)
+deformities=geo.FindCircleDeformities(circle)
+
+lastCircleNumber=len(stumpCircles)-1
+
+trunk = GrowTrunk(100,(0,0,circle[0][2]),(0,0,0.2),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
 for tCircle in trunk[0]:
     verts.extend(tCircle)
 
