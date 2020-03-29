@@ -54,6 +54,7 @@ def generateFractalString(iteration):
             temp = ""
         return result
 
+
 def drawFractalTest(input,angleRad,shape):
     stack=[]
     shapeStack =[]

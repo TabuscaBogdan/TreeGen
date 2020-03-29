@@ -82,17 +82,23 @@ def CalculateUpperStump(nrCircleVertexes,ray,deformities,lastLowerStumpCircle,ab
 
 
 
-def CalculateStump(nrCircleVertexes,ray,deformities,abruptness,height,finese=0.1):
-    stumpVertexes = []
+def CalculateStumpCircles(nrCircleVertexes,ray,deformities,abruptness,height,finese=0.1):
+    stumpCircles = []
 
     lowerStumpCircles = CalculateLowerStump(nrCircleVertexes,ray,deformities,finese)
     upperStumpCircles = CalculateUpperStump(nrCircleVertexes,ray,deformities,lowerStumpCircles[-1],abruptness,height,finese)
     for circle in lowerStumpCircles:
-        stumpVertexes.extend(circle)
+        stumpCircles.append(circle)
     for circle in upperStumpCircles:
-        stumpVertexes.extend(circle)
+        stumpCircles.append(circle)
 
-    return stumpVertexes
+    return stumpCircles
+
+def CalculateStumpFaces(stumpCircles):
+    stumpFaces =[]
+    stumpVerts = geo.ConvertCirclesToVerts(stumpCircles)
+    stumpFaces.extend(geo.CreateShapeOutOfCircleVertexes(len(stumpCircles[0]),stumpVerts))
+    return stumpFaces
 
 #===============================================================
 #===Parameters===
@@ -102,9 +108,9 @@ stumpAbruptness = 2
 #================
 if __name__ == "__main__":
     deformities = geo.SmoothRandom((0, 2), 1, nrCircleVertexes)
-    verts.extend(CalculateStump(nrCircleVertexes, circleRay, deformities, stumpAbruptness, height=1, finese=0.1))
-
-    faces.extend(geo.CreateShapeOutOfCircleVertexes(nrCircleVertexes,verts))
+    stumpCircles = CalculateStumpCircles(nrCircleVertexes, circleRay, deformities, stumpAbruptness, height=1, finese=0.1)
+    verts.extend(geo.ConvertCirclesToVerts(stumpCircles))
+    faces.extend(CalculateStumpFaces(stumpCircles))
     faces.append(geo.CalculateCircleFace(nrCircleVertexes,verts))
     # create mesh and object
     mymesh = bpy.data.meshes.new("myshape")

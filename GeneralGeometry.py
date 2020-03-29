@@ -42,6 +42,20 @@ def addVectorToVerts(toupleVector,touplesVertsList):
         new_verts.append(sum_touples(toupleVector,x))
     return new_verts
 
+def addVectorToVertsOnlyXY(toupleVector, toupleVertsList):
+    new_verts = []
+    lstVect = list(toupleVector)
+
+    for x in toupleVertsList:
+        lstVert = list(x)
+        sumXYList=[]
+        sumXYList.append(lstVect[0] + lstVert[0])
+        sumXYList.append( lstVect[1] + lstVert[1])
+        for i in range(2,len(lstVert)):
+            sumXYList.append(lstVect[i])
+        new_verts.append(tuple(sumXYList))
+    return new_verts
+
 def drange(x, y, jump):
     if(x<y):
         while x <= y:
@@ -63,6 +77,13 @@ def CalculateVertexCircle(nrCircleVertexes,ray):
         vertex = (x,y,0)
         verts.append(vertex)
     return verts
+
+def ConvertCirclesToVerts(circles):
+    verts=[]
+    for circle in circles:
+        verts.extend(circle)
+    return verts
+
 #=========================================================================================
 
 
@@ -94,7 +115,7 @@ def CreateShapeOutOfCircleVertexes(nrCircleVertexes,circlesVertexes):
     nrOfVertexes = len(circlesVertexes)
     nrOfCircles = nrOfVertexes//nrCircleVertexes
     faces=[]
-    for circle in range(0,nrOfCircles-1):
+    for circle in range(0,nrOfCircles):
         for vert in range(0,nrCircleVertexes):
             if((vert+1+nrCircleVertexes*(circle+1))%nrCircleVertexes!=0):
                 face = (vert + nrCircleVertexes * circle, vert + 1 + circle * nrCircleVertexes,
@@ -155,6 +176,8 @@ matrix_world = (((1.0, 0.0, 0.0, 0.0),
                      (0.0, 0.0, 0.0, 1.0)))
 
 
+#=========================Rotations============================================================
+
 def matmult(X, Y):
     result = []
     for i in range(len(X)):
@@ -186,3 +209,16 @@ def rotateVerticesOnZ(nrCircleVertexes,circleVertexes,angleRads):
     movedVertices=[]
     rotationMatrixZ=[[math.cos(angleRads),-math.sin(angleRads),0],[math.sin(angleRads),math.cos(angleRads),0],[0,0,1]]
     return rotate(nrCircleVertexes, circleVertexes, rotationMatrixZ)
+
+
+#==============================Noise==========================================================
+
+def AddDirectionNoiseXY(position,tupleRayInterval,intervalDecimalNumber=1):
+    randomDegree = ((math.pi*2)/360)*random.randrange(0,360,1)
+    randomUnit = round(random.uniform(tupleRayInterval[0],tupleRayInterval[1]), intervalDecimalNumber)
+
+    newX = position[0]+randomUnit*math.sin(randomDegree)
+    newY = position[1]+randomUnit*math.cos(randomDegree)
+
+    return tuple([newX,newY,position[2]])
+
