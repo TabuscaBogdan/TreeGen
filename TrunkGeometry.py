@@ -44,11 +44,32 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
 
     nrCircle = initialCircle
 
+    initialAngles = [0,0]
+    anglesIntervals = [[0,math.pi/6],[0,math.pi*2]]
+
     for i in range(1,iterations):
-        if(i%9==0):
-            currentPosition = geo.AddDirectionNoiseXY(currentPosition,randomIntervalTouple,randomIntervalDecimalNumber)
+        positionAndAngles = geo.PickPointInSemiSphere(currentPosition, rayInterval = [0.2,1], initialAngles = [0,0], anglesIntervals = anglesIntervals, precision=2)
+
+        currentPosition = positionAndAngles[0]
+        initialAngles = positionAndAngles[1]
+
+        maxDeformedCircleRay = geo.FindMaxRayOfDeformedCircle(shape)
+        minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(shape)
+
+        mutationInterval =[0,maxDeformedCircleRay-minDeformedCircleRay]
+
+        deformities=geo.MutateValues(deformities,mutationInterval,mutationFactor,mutationChance,precision=2)
+
+        shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, 99 - i / 10, deformities)
+
+
+        '''
+        currentPositionRotationRay = geo.AddDirectionNoiseXY(currentPosition,randomIntervalTouple,randomIntervalDecimalNumber)
+        currentPosition=currentPositionRotationRay[0]
+
         currentPosition = geo.sum_touples(currentPosition, stepVector)
 
+        #=========================================================
         maxDeformedCircleRay= geo.FindMaxRayOfDeformedCircle(shape)
         minDeformedCircleRay= geo.FindMinRayOfDeformedCircle(shape)
 
@@ -57,6 +78,12 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
         deformities=geo.MutateValues(deformities,mutationInterval,mutationFactor,mutationChance,precision=2)
 
         shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,99-i/50,deformities)
+        angleRads = currentPositionRotationRay[1]*(math.pi/180)
+
+        shape = geo.rotateVerticesOnX(len(shape),shape,angleRads)
+        shape = geo.rotateVerticesOnY(len(shape),shape,angleRads)
+        
+        '''
 
         newShapePlacement = geo.addVectorToVertsOnlyXY(currentPosition, shape)
 
@@ -65,6 +92,7 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
         nrCircle += 1
         bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), initialCircle, nrCircle))
         initialCircle = nrCircle
+
     #remove the initial stump face
     bodyCilynder.pop(0)
     return [bodyCilynder,bodyCilynderFaces]
@@ -97,7 +125,7 @@ deformities=geo.FindCircleDeformities(circle)
 
 lastCircleNumber=len(stumpCircles)-1
 
-trunk = GrowTrunk(100,(0,0,circle[0][2]),(0,0,0.2),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
+trunk = GrowTrunk(100,(0,0,circle[0][2]),(0,0,1),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
 for tCircle in trunk[0]:
     verts.extend(tCircle)
 

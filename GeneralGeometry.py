@@ -264,7 +264,7 @@ def AddDirectionNoiseXY(position,tupleRayInterval,intervalDecimalNumber=1):
     newX = position[0]+randomUnit*math.sin(randomDegree)
     newY = position[1]+randomUnit*math.cos(randomDegree)
 
-    return tuple([newX,newY,position[2]])
+    return [tuple([newX,newY,position[2]]),randomDegree,randomUnit]
 
 def SmoothRandom(bigInterval, littleIntervalSize, valuesNeeded, precision=1):
     if(bigInterval[0]>=bigInterval[1]):
@@ -302,5 +302,26 @@ def MutateValues(values,mutationInterval,mutationFactor,mutationChance=0.5,preci
             else:
                 values[i]=mutation
     return values
+
+#=================================Picks=======================================
+
+def PickPointInSemiSphere(startingPosition, rayInterval, initialAngles, anglesIntervals, precision=2):
+    x0 = startingPosition[0]
+    y0 = startingPosition[1]
+    z0 = startingPosition[2]
+
+    ray = round(random.uniform(rayInterval[0],rayInterval[1]), precision)
+
+    theta= random.uniform(anglesIntervals[0][0], anglesIntervals[0][1]) + initialAngles[0]
+    sigma= random.uniform(anglesIntervals[1][0]/2, anglesIntervals[1][1]/2) + initialAngles[1] #for semisphere
+
+
+
+    x= x0+ ray* math.sin(theta)*math.cos(sigma)
+    y= y0+ ray* math.sin(theta)*math.sin(sigma)
+    z= z0+ ray* math.cos(theta)
+
+    return [tuple([x,y,z]),[theta,sigma]]
+
 
 
