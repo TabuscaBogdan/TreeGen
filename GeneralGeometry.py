@@ -26,6 +26,28 @@ def mul_touples(tup1,tup2):
         mulList.append(lst1[i]*lst2[i])
     return tuple(mulList)
 
+def div_touples(tup1,tup2):
+    lst1 = list(tup1)
+    lst2 = list(tup2)
+    divList = []
+    for i in range(0,len(lst1)):
+        divList.append(lst1[i]/lst2[i])
+    return tuple(divList)
+
+def dotProd_touple(tup1,tup2):
+    lst1 = list(tup1)
+    lst2= list(tup2)
+    value=0
+    for i in range(0,len(lst1)):
+        value+=lst1[i]*lst2[i]
+    return value
+
+def magnitude_touple(tup):
+    value=0
+    for i in range(0,len(tup)):
+        value+=tup[i]**2
+    return math.sqrt(value)
+
 def mul_tuples_w_value(tup,value):
     listTuple = list(tup)
     for i in range(0,len(listTuple)):
