@@ -45,7 +45,7 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
     nrCircle = initialCircle
 
     initialAngles = [0,0]
-    anglesIntervals = [[0,math.pi/6],[0,math.pi*2]]
+    anglesIntervals = [[-math.pi/6,math.pi/6],[0,math.pi*2]]
 
     for i in range(1,iterations):
         positionAndAngles = geo.PickPointInSemiSphere(currentPosition, rayInterval = [0.2,1], initialAngles = [0,0], anglesIntervals = anglesIntervals, precision=2)
@@ -58,9 +58,13 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
 
         mutationInterval =[0,maxDeformedCircleRay-minDeformedCircleRay]
 
-        deformities=geo.MutateValues(deformities,mutationInterval,mutationFactor,mutationChance,precision=2)
+        shape = geo.rotateCircleOnAxis(shape,currentPosition,initialAngles[0])
+        #deformities=geo.MutateValues(deformities,mutationInterval,mutationFactor,mutationChance,precision=2)
 
-        shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, 99 - i / 10, deformities)
+ #       shape = geo.rotateVerticesOnY(len(shape), shape, initialAngles[1])
+        #shape = geo.rotateVerticesOnX(len(shape), shape, initialAngles[1])
+
+        #shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, 99 - i / 10, deformities)
 
 
         '''
@@ -85,7 +89,7 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
         
         '''
 
-        newShapePlacement = geo.addVectorToVertsOnlyXY(currentPosition, shape)
+        newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
 
         bodyCilynder.append(newShapePlacement)
 

@@ -18,6 +18,21 @@ def sum_touples(tup1,tup2):
         sumList.append(lst1[i]+lst2[i])
     return tuple(sumList)
 
+def mul_touples(tup1,tup2):
+    lst1 = list(tup1)
+    lst2 = list(tup2)
+    mulList = []
+    for i in range(0,len(lst1)):
+        mulList.append(lst1[i]*lst2[i])
+    return tuple(mulList)
+
+def mul_tuples_w_value(tup,value):
+    listTuple = list(tup)
+    for i in range(0,len(listTuple)):
+        listTuple[i]= listTuple[i]* value;
+    return tuple(listTuple)
+
+
 def addVectorToVerts(toupleVector,touplesVertsList):
     new_verts = []
     for x in touplesVertsList:
@@ -254,6 +269,25 @@ def rotateVerticesOnZ(nrCircleVertexes,circleVertexes,angleRads):
     rotationMatrixZ=[[math.cos(angleRads),-math.sin(angleRads),0],[math.sin(angleRads),math.cos(angleRads),0],[0,0,1]]
     return rotate(nrCircleVertexes, circleVertexes, rotationMatrixZ)
 
+def rotateCircleOnAxis(circle,axis,angle):
+    circleLength= len(circle)
+    movedVertices = []
+
+    x0=axis[0]
+    y0=axis[1]
+    z0=axis[2]
+
+    for vertex in circle:
+        x=vertex[0]
+        y=vertex[1]
+        z=vertex[2]
+
+        xRot= (x*y0-y*x0)*(1-math.cos(angle))*y0+x*math.cos(angle)
+        yRot= -(x*y0-y*x0)*(1-math.cos(angle))*x0 + y*math.cos(angle)
+        zRot= (x*x0+y*y0)*math.sin(angle)
+
+        movedVertices.append(tuple([xRot,yRot,zRot]))
+    return movedVertices
 
 #==============================Noise==========================================================
 
