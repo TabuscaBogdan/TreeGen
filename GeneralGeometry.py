@@ -311,6 +311,15 @@ def rotateCircleOnAxis(circle,axis,angle):
         movedVertices.append(tuple([xRot,yRot,zRot]))
     return movedVertices
 
+def rotateCircleOnSphereAxis(circle,angles):
+    theta=angles[0]
+    sigma=angles[1]
+    rotationMatrixOnAxis =[[math.cos(theta)+(1-math.cos(theta))*(math.sin(sigma)**2), -(1-math.cos(theta))*math.sin(sigma)*math.cos(sigma), math.sin(sigma)*math.cos(sigma)],
+                           [-(1-math.cos(theta))*math.sin(sigma)*math.cos(sigma), math.cos(theta)+(1-math.cos(theta))*(math.cos(theta)**2), math.sin(theta)*math.sin(sigma)],
+                           [-math.sin(theta)*math.cos(sigma), -math.sin(theta)*math.sin(sigma), math.cos(theta)]
+                           ]
+    return rotate(len(circle),circle,rotationMatrixOnAxis)
+
 #==============================Noise==========================================================
 
 def AddDirectionNoiseXY(position,tupleRayInterval,intervalDecimalNumber=1):
