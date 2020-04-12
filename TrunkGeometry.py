@@ -25,19 +25,47 @@ verts = []
 faces = []
 edges = []
 
-def matmult(X,Y):
-        result = []
-        for i in range(len(X)):
-            result.append([])
-            for j in range(len(Y[0])):
-                result[i].append(0)
-                for k in range(len(Y)):
-                    result[i][j] += X[i][k] * Y[k][j]
-        return result
+def CalculateSplitBranchThickness(nrOfbranches):
+    #Most of the time there exists a main branch, when a tree splits,
+    thicknessPrecents =[]
+
+    mainBranchMaxThickness=80 #precent
+    mainBranchMinThickness=mainBranchMaxThickness/2
+
+    secondaryBranchMaxThickness = 60 #precent
+    secondaryBranchMinThickness = secondaryBranchMaxThickness/2
+
+    mainBranchRayPrecent = random.randrange(mainBranchMinThickness,mainBranchMaxThickness)
+    thicknessPrecents.append(mainBranchRayPrecent)
+
+    for i in range(1,nrOfbranches):
+        secondaryBranchThickness = random.randrange(secondaryBranchMinThickness,secondaryBranchMaxThickness)
+        thicknessPrecents.append(secondaryBranchThickness)
+
+    return thicknessPrecents
 
 
 
-def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIntervalTouple,deformities,mutationChance,mutationFactor,randomIntervalDecimalNumber=1,):
+
+
+def Split(currentPosition,circle,circleNumber,anglesIntervals,sphereRayInterval,initialAngles,branchSplitNumber):
+    circleRay = geo.FindMinRayOfDeformedCircle(circle)
+
+    branches = []
+    angleSection = anglesIntervals[1]/branchSplitNumber
+
+    for i in range(1,branchSplitNumber):
+        sectionAngleIntervals =[anglesIntervals[0],[angleSection*i,angleSection*(i+1)]]
+        branchPositionAndAngles = geo.PickPointInSemiSphere(currentPosition,sphereRayInterval,initialAngles, sectionAngleIntervals, precision)
+        branches.append(branchPositionAndAngles)
+    branchPrecents = CalculateSplitBranchThickness(branchSplitNumber)
+    for i in range(1,branchSplitNumber):
+        branches[i].append(branchPrecents[i])
+
+    return branches
+
+
+def GrowTrunk(iterations,currentPosition,shape,initialCircle,randomIntervalTouple,deformities,mutationChance,mutationFactor,randomIntervalDecimalNumber=1):
     bodyCilynder=[]
     bodyCilynderFaces = []
     bodyCilynder.append(shape)
@@ -46,55 +74,22 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
 
     initialAngles = [0,0]
     anglesIntervals = [[0,math.pi/6],[0,math.pi*2]]
+    splitInterval = [2,3]
 
     for i in range(1,iterations):
-        positionAndAngles = geo.PickPointInSemiSphere(currentPosition, rayInterval = [1,1], initialAngles = [0,0], anglesIntervals = anglesIntervals, precision=2)
+        positionAndAngles = geo.PickPointInSemiSphere(currentPosition, rayInterval = [1,1], initialAngles = [0,0], anglesIntervals = anglesIntervals, precision = precision)
 
         currentPosition = positionAndAngles[0]
         initialAngles = positionAndAngles[1]
 
         maxDeformedCircleRay = geo.FindMaxRayOfDeformedCircle(shape)
         minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(shape)
-
-        mutationInterval =[0,maxDeformedCircleRay-minDeformedCircleRay]
-
-
-        #realAngle= geo.dotProd_touple(zAxis,currentPosition)/(geo.magnitude_touple(zAxis)*geo.magnitude_touple(currentPosition))
-
+        #mutationInterval =[0,maxDeformedCircleRay-minDeformedCircleRay]
         #deformities = geo.MutateValues(deformities, mutationInterval, mutationFactor, mutationChance, precision=2)
+
         shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,99-i/50,deformities=[])
 
         shape= geo.rotateCircleOnSphereAxis(shape,initialAngles)
-        #shape = geo.rotateCircleOnAxis(shape,currentPosition,initialAngles[0])
-
-
- #       shape = geo.rotateVerticesOnY(len(shape), shape, initialAngles[1])
-        #shape = geo.rotateVerticesOnX(len(shape), shape, initialAngles[1])
-
-        #shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, 99 - i / 10, deformities)
-
-
-        '''
-        currentPositionRotationRay = geo.AddDirectionNoiseXY(currentPosition,randomIntervalTouple,randomIntervalDecimalNumber)
-        currentPosition=currentPositionRotationRay[0]
-
-        currentPosition = geo.sum_touples(currentPosition, stepVector)
-
-        #=========================================================
-        maxDeformedCircleRay= geo.FindMaxRayOfDeformedCircle(shape)
-        minDeformedCircleRay= geo.FindMinRayOfDeformedCircle(shape)
-
-        mutationInterval =[0,maxDeformedCircleRay-minDeformedCircleRay]
-
-        deformities=geo.MutateValues(deformities,mutationInterval,mutationFactor,mutationChance,precision=2)
-
-        shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,99-i/50,deformities)
-        angleRads = currentPositionRotationRay[1]*(math.pi/180)
-
-        shape = geo.rotateVerticesOnX(len(shape),shape,angleRads)
-        shape = geo.rotateVerticesOnY(len(shape),shape,angleRads)
-        
-        '''
 
         newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
 
@@ -112,6 +107,7 @@ def GrowTrunk(iterations,currentPosition,stepVector,shape,initialCircle,randomIn
 #==============================================================
 #===Parameters===
 nrCircleVertexes=60
+precision = 2
 circleRay=2
 stumpAbruptness = 2
 barkMutationChance=0.5
@@ -136,7 +132,7 @@ deformities=geo.FindCircleDeformities(circle)
 
 lastCircleNumber=len(stumpCircles)-1
 
-trunk = GrowTrunk(100,(0,0,circle[0][2]),(0,0,1),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
+trunk = GrowTrunk(100,(0,0,circle[0][2]),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
 for tCircle in trunk[0]:
     verts.extend(tCircle)
 
