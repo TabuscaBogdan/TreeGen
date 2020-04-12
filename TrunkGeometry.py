@@ -29,11 +29,11 @@ def CalculateSplitBranchThickness(nrOfbranches):
     #Most of the time there exists a main branch, when a tree splits,
     thicknessPrecents =[]
 
-    mainBranchMaxThickness=80 #precent
+    mainBranchMaxThickness=90 #precent
     mainBranchMinThickness=mainBranchMaxThickness/2
 
-    secondaryBranchMaxThickness = 60 #precent
-    secondaryBranchMinThickness = secondaryBranchMaxThickness/2
+    secondaryBranchMaxThickness = 80 #precent
+    secondaryBranchMinThickness = int(secondaryBranchMaxThickness/1.2)
 
     mainBranchRayPrecent = random.randrange(mainBranchMinThickness,mainBranchMaxThickness)
     thicknessPrecents.append(mainBranchRayPrecent)
@@ -48,24 +48,90 @@ def CalculateSplitBranchThickness(nrOfbranches):
 
 
 
-def Split(currentPosition,circle,circleNumber,anglesIntervals,sphereRayInterval,initialAngles,branchSplitNumber):
+def Split(currentPosition,circle,circleNumber,anglesIntervals,sphereRayInterval,initialAngles,branchSplitNumber,currentRayPrecent):
     circleRay = geo.FindMinRayOfDeformedCircle(circle)
 
     branches = []
-    angleSection = anglesIntervals[1]/branchSplitNumber
+    angleSection = anglesIntervals[1][1]/branchSplitNumber
 
-    for i in range(1,branchSplitNumber):
-        sectionAngleIntervals =[anglesIntervals[0],[angleSection*i,angleSection*(i+1)]]
+    for i in range(0,branchSplitNumber):
+        sectionAngleIntervals =[[anglesIntervals[0][1]/2,anglesIntervals[0][1]],[angleSection*i,angleSection*(i+1)]]
         branchPositionAndAngles = geo.PickPointInSemiSphere(currentPosition,sphereRayInterval,initialAngles, sectionAngleIntervals, precision)
         branches.append(branchPositionAndAngles)
+        #TODO retreive section as well
     branchPrecents = CalculateSplitBranchThickness(branchSplitNumber)
-    for i in range(1,branchSplitNumber):
+    for i in range(0,branchSplitNumber):
+        branchPrecents[i] = int((currentRayPrecent/100)*branchPrecents[i])
+
         branches[i].append(branchPrecents[i])
+        branches[i].append(circleNumber)
 
     return branches
 
+def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,initialAngles, anglesIntervals, currentRayPrecent,rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain):
+    bodyCilynder = []
+    bodyCilynderFaces = []
+    bodyCilynder.append(shape)
+    global currentCircleNumber
+    global splitInterval
 
-def GrowTrunk(iterations,currentPosition,shape,initialCircle,randomIntervalTouple,deformities,mutationChance,mutationFactor,randomIntervalDecimalNumber=1):
+    splitStop=0
+
+    while(currentRayPrecent>=stopCircleRayPrecent and splitStop==0):
+        positionAndAngles = geo.PickPointInSemiSphere(currentPosition, rayInterval = raySphereInterval, initialAngles = [0,0], anglesIntervals = anglesIntervals, precision = precision)
+
+        currentPosition = positionAndAngles[0]
+        initialAngles = positionAndAngles[1]
+
+        minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(shape)
+
+        currentRayPrecent -= rayReductionPrecentPerStep
+        shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,currentRayPrecent,deformities=[])
+        shape= geo.rotateCircleOnSphereAxis(shape,initialAngles)
+        newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
+
+        bodyCilynder.append(newShapePlacement)
+        currentCircleNumber += 1
+
+        bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), initialCircleNumber, currentCircleNumber))
+        initialCircleNumber = currentCircleNumber
+
+        chanceToSplit = random.randrange(0,100)
+        if(chanceToSplit<=startingSplitChance):
+            splitStop = 1
+
+            numberOfSplits = random.randrange(splitInterval[0],splitInterval[1])
+            treeSplit = Split(currentPosition, shape, currentCircleNumber, anglesIntervals, [raySphereInterval[0], raySphereInterval[1]], initialAngles=initialAngles,
+                              branchSplitNumber=numberOfSplits,currentRayPrecent = currentRayPrecent)
+
+            for j in range(0,len(treeSplit)):
+                currentPosition = treeSplit[j][0]
+                initialAngles = treeSplit[j][1]
+
+                minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(shape)
+
+                currentRayPrecent = treeSplit[j][2]
+                shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, currentRayPrecent, deformities=[])
+                shape = geo.rotateCircleOnSphereAxis(shape, initialAngles)
+                newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
+                bodyCilynder.append(newShapePlacement)
+                currentCircleNumber +=1
+                bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), treeSplit[j][3], currentCircleNumber))
+                initialCircleNumber = currentCircleNumber
+
+                branchCirclesAndFaces = GrowBranchingTrunk(currentPosition,shape,currentCircleNumber,[0,0],anglesIntervals,currentRayPrecent,rayReductionPrecentPerStep,raySphereInterval,startingSplitChance,splitChanceGain)
+                bodyCilynder.extend(branchCirclesAndFaces[0])
+                bodyCilynderFaces.extend(branchCirclesAndFaces[1])
+
+        else:
+            startingSplitChance+=splitChanceGain
+
+    # remove the initial stump face
+    bodyCilynder.pop(0)
+    return [bodyCilynder, bodyCilynderFaces]
+
+
+def GrowTrunk(iterations,currentPosition,shape,initialCircle,randomIntervalTouple,deformities,mutationChance,mutationFactor):
     bodyCilynder=[]
     bodyCilynderFaces = []
     bodyCilynder.append(shape)
@@ -74,10 +140,9 @@ def GrowTrunk(iterations,currentPosition,shape,initialCircle,randomIntervalToupl
 
     initialAngles = [0,0]
     anglesIntervals = [[0,math.pi/6],[0,math.pi*2]]
-    splitInterval = [2,3]
 
     for i in range(1,iterations):
-        positionAndAngles = geo.PickPointInSemiSphere(currentPosition, rayInterval = [1,1], initialAngles = [0,0], anglesIntervals = anglesIntervals, precision = precision)
+        positionAndAngles = geo.PickPointInSemiSphere(currentPosition, rayInterval = [2,2], initialAngles = [0,0], anglesIntervals = anglesIntervals, precision = precision)
 
         currentPosition = positionAndAngles[0]
         initialAngles = positionAndAngles[1]
@@ -88,9 +153,7 @@ def GrowTrunk(iterations,currentPosition,shape,initialCircle,randomIntervalToupl
         #deformities = geo.MutateValues(deformities, mutationInterval, mutationFactor, mutationChance, precision=2)
 
         shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,99-i/50,deformities=[])
-
         shape= geo.rotateCircleOnSphereAxis(shape,initialAngles)
-
         newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
 
         bodyCilynder.append(newShapePlacement)
@@ -99,19 +162,44 @@ def GrowTrunk(iterations,currentPosition,shape,initialCircle,randomIntervalToupl
         bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), initialCircle, nrCircle))
         initialCircle = nrCircle
 
+        if(i==9):
+            treeSplit=Split(currentPosition,shape,nrCircle,anglesIntervals,[3,8],initialAngles = [0,0],branchSplitNumber=5)
+            for j in range(0,len(treeSplit)):
+                currentPosition = treeSplit[j][0]
+                initialAngles = treeSplit[j][1]
+                minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(shape)
+                shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, treeSplit[j][2], deformities=[])
+                shape = geo.rotateCircleOnSphereAxis(shape, initialAngles)
+                newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
+                bodyCilynder.append(newShapePlacement)
+                nrCircle +=1
+                bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), treeSplit[j][3], nrCircle))
+
+
     #remove the initial stump face
     bodyCilynder.pop(0)
     return [bodyCilynder,bodyCilynderFaces]
 
 
 #==============================================================
+#====Globals=====
+currentCircleNumber = 0
+stopCircleRayPrecent = 30
 #===Parameters===
 nrCircleVertexes=60
 precision = 2
-circleRay=2
+circleRay=3
 stumpAbruptness = 2
 barkMutationChance=0.5
-barkMutationFactor=4 #Lower factor = more noticeable, Greater = less noticeable
+barkMutationFactor=4#Lower factor = more noticeable, Greater = less noticeable
+
+#Branching
+rayReductionPrecentPerStep = 0.5
+raySphereInterval = [circleRay,circleRay*2]
+anglesIntervals = [[0,math.pi/6],[0,math.pi*2]]
+splitInterval = [2,4]
+startingSplitChance = 10
+splichanceGain = 2
 #================
 #fractalString = bGeo.generateFractalString(6)
 #fractal = bGeo.drawFractalTest(fractalString,math.pi/6,circle1)
@@ -131,8 +219,15 @@ circle = stumpCircles[-1]
 deformities=geo.FindCircleDeformities(circle)
 
 lastCircleNumber=len(stumpCircles)-1
+currentCircleNumber = lastCircleNumber
 
-trunk = GrowTrunk(100,(0,0,circle[0][2]),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
+lastStumpCirclePosition = (0,0,circle[0][2])
+
+#trunk = GrowTrunk(10,(0,0,circle[0][2]),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
+trunk = GrowBranchingTrunk(currentPosition=lastStumpCirclePosition, shape=circle, initialCircleNumber=lastCircleNumber,
+                           initialAngles= [0,0], anglesIntervals= anglesIntervals,currentRayPrecent=100,rayReductionPrecentPerStep=rayReductionPrecentPerStep,
+                           raySphereInterval= raySphereInterval,startingSplitChance= startingSplitChance, splitChanceGain= splichanceGain)
+
 for tCircle in trunk[0]:
     verts.extend(tCircle)
 
