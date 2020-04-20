@@ -29,11 +29,11 @@ def CalculateSplitBranchThickness(nrOfbranches):
     #Most of the time there exists a main branch, when a tree splits,
     thicknessPrecents =[]
 
-    mainBranchMaxThickness=90 #precent
-    mainBranchMinThickness=mainBranchMaxThickness/2
+    mainBranchMaxThickness=100 #precent
+    mainBranchMinThickness= int(mainBranchMaxThickness/mainBranchMinimumThicknessReductionOnSplit)
 
-    secondaryBranchMaxThickness = 80 #precent
-    secondaryBranchMinThickness = int(secondaryBranchMaxThickness/1.2)
+    secondaryBranchMaxThickness = 90 #precent
+    secondaryBranchMinThickness = int(secondaryBranchMaxThickness/secondaryBranchMinimumThicknessReductionOnSplit)
 
     mainBranchRayPrecent = random.randrange(mainBranchMinThickness,mainBranchMaxThickness)
     thicknessPrecents.append(mainBranchRayPrecent)
@@ -48,23 +48,32 @@ def CalculateSplitBranchThickness(nrOfbranches):
 
 
 
-def Split(currentPosition,circle,circleNumber,anglesIntervals,sphereRayInterval,initialAngles,branchSplitNumber,currentRayPrecent):
-    circleRay = geo.FindMinRayOfDeformedCircle(circle)
-
+def Split(currentPosition,circleNumber,anglesIntervals,sphereRayInterval,initialAngles,branchSplitNumber,currentRayPrecent):
+    branchAngleSections = []
     branches = []
     angleSection = anglesIntervals[1][1]/branchSplitNumber
+    deadSection = anglesIntervals[1][1]/(branchSplitNumber+1)
+    #deadSection = angleSection/branchSplitNumber
 
     for i in range(0,branchSplitNumber):
-        sectionAngleIntervals =[[anglesIntervals[0][1]/2,anglesIntervals[0][1]],[angleSection*i,angleSection*(i+1)]]
+        #TODO split on more restrained intervals such that branches do not colide with eachother
+        sectionAngleIntervals =[[anglesIntervals[0][0],anglesIntervals[0][1]],[angleSection*i,angleSection*(i+1)-deadSection]]
+
         branchPositionAndAngles = geo.PickPointInSemiSphere(currentPosition,sphereRayInterval,initialAngles, sectionAngleIntervals, precision)
+
         branches.append(branchPositionAndAngles)
+        branchAngleSections.append(sectionAngleIntervals)
+
         #TODO retreive section as well
     branchPrecents = CalculateSplitBranchThickness(branchSplitNumber)
     for i in range(0,branchSplitNumber):
+
         branchPrecents[i] = int((currentRayPrecent/100)*branchPrecents[i])
 
         branches[i].append(branchPrecents[i])
         branches[i].append(circleNumber)
+
+        branches[i].append(branchAngleSections[i])
 
     return branches
 
@@ -83,7 +92,10 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,initialAngles, 
         currentPosition = positionAndAngles[0]
         initialAngles = positionAndAngles[1]
 
-        minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(shape)
+        initialShape = shape
+
+        #ThicknessProblemFix
+        minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(initialShape)
 
         currentRayPrecent -= rayReductionPrecentPerStep
         shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,currentRayPrecent,deformities=[])
@@ -101,16 +113,18 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,initialAngles, 
             splitStop = 1
 
             numberOfSplits = random.randrange(splitInterval[0],splitInterval[1])
-            treeSplit = Split(currentPosition, shape, currentCircleNumber, anglesIntervals, [raySphereInterval[0], raySphereInterval[1]], initialAngles=initialAngles,
+            treeSplit = Split(currentPosition, currentCircleNumber, anglesIntervals, [raySphereInterval[0], raySphereInterval[1]], initialAngles=initialAngles,
                               branchSplitNumber=numberOfSplits,currentRayPrecent = currentRayPrecent)
 
             for j in range(0,len(treeSplit)):
                 currentPosition = treeSplit[j][0]
                 initialAngles = treeSplit[j][1]
 
-                minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(shape)
+                #Thickness Problem Fix
+                minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(initialShape)
 
                 currentRayPrecent = treeSplit[j][2]
+
                 shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, currentRayPrecent, deformities=[])
                 shape = geo.rotateCircleOnSphereAxis(shape, initialAngles)
                 newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
@@ -119,7 +133,7 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,initialAngles, 
                 bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), treeSplit[j][3], currentCircleNumber))
                 initialCircleNumber = currentCircleNumber
 
-                branchCirclesAndFaces = GrowBranchingTrunk(currentPosition,shape,currentCircleNumber,[0,0],anglesIntervals,currentRayPrecent,rayReductionPrecentPerStep,raySphereInterval,startingSplitChance,splitChanceGain)
+                branchCirclesAndFaces = GrowBranchingTrunk(currentPosition,initialShape,currentCircleNumber,[0,0],anglesIntervals,currentRayPrecent,rayReductionPrecentPerStep,raySphereInterval,startingSplitChance,splitChanceGain)
                 bodyCilynder.extend(branchCirclesAndFaces[0])
                 bodyCilynderFaces.extend(branchCirclesAndFaces[1])
 
@@ -184,7 +198,7 @@ def GrowTrunk(iterations,currentPosition,shape,initialCircle,randomIntervalToupl
 #==============================================================
 #====Globals=====
 currentCircleNumber = 0
-stopCircleRayPrecent = 30
+stopCircleRayPrecent = 40
 #===Parameters===
 nrCircleVertexes=60
 precision = 2
@@ -194,12 +208,15 @@ barkMutationChance=0.5
 barkMutationFactor=4#Lower factor = more noticeable, Greater = less noticeable
 
 #Branching
-rayReductionPrecentPerStep = 0.5
+rayReductionPrecentPerStep = 2
 raySphereInterval = [circleRay,circleRay*2]
-anglesIntervals = [[0,math.pi/6],[0,math.pi*2]]
+anglesIntervals = [[0,math.pi/5],[0,math.pi*2]]
 splitInterval = [2,4]
 startingSplitChance = 10
 splichanceGain = 2
+
+mainBranchMinimumThicknessReductionOnSplit =1.1
+secondaryBranchMinimumThicknessReductionOnSplit = 1.2
 #================
 #fractalString = bGeo.generateFractalString(6)
 #fractal = bGeo.drawFractalTest(fractalString,math.pi/6,circle1)
