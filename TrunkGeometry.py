@@ -25,6 +25,16 @@ verts = []
 faces = []
 edges = []
 
+
+def DeformitiesCheck(deformities,initialShape,minDeformedCircleRay):
+    if (deformities != []):
+        maxDeformedCircleRay = geo.FindMaxRayOfDeformedCircle(initialShape)
+        mutationInterval = [0, maxDeformedCircleRay - minDeformedCircleRay]
+        deformities = geo.MutateValues(deformities, mutationInterval, barkMutationFactor, barkMutationChance,
+                                       precision=2)
+        return deformities
+    return []
+
 def DetermineZAngleInterval(initialAngles, anglesIntervals):
     zAngle = initialAngles[0]
     oldInterval = anglesIntervals[0]
@@ -104,9 +114,34 @@ def Split(currentPosition,circleNumber,anglesIntervals,sphereRayInterval,initial
 
     return branches
 
-def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,oldAngles,isMainBranch, anglesIntervals, currentRayPrecent,rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain):
+def GrowLeaves(leafSegments,TreeMeshName,LeafMeshName):
+    scene = bpy.context.scene
+    sourceObject = bpy.data.objects[LeafMeshName]
+    parentObject = bpy.data.objects[TreeMeshName]
+
+    for segment in leafSegments:
+
+        startPoint = segment[0]
+        angles = segment[1]
+        endPoint = segment[2]
+
+        newObject = sourceObject.copy()
+        newObject.data = sourceObject.data.copy()
+        newObject.location = endPoint
+
+        eulerAngles = geo.getEulerAnglesFromSphereAngles(angles)
+        newObject.rotation_euler = (eulerAngles[0], eulerAngles[1], eulerAngles[2])
+
+        #newObject.parent = parentObject
+        scene.collection.objects.link(newObject)
+
+
+
+
+def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPosition,oldAngles,isMainBranch, anglesIntervals, currentRayPrecent,rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain, deformities):
     bodyCilynder = []
     bodyCilynderFaces = []
+    leafSegments = []
     bodyCilynder.append(shape)
     global currentCircleNumber
     global splitInterval
@@ -115,21 +150,12 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,oldAngles,isMai
     mainBranch=0
 
     if(currentRayPrecent<stopCircleRayPrecent):
-        scene = bpy.context.scene
-        sourceObject = bpy.data.objects['flower']
-        newObject = sourceObject.copy()
-        newObject.data = sourceObject.data.copy()
-        newObject.location = currentPosition
-
-        eulerAngles=geo.getEulerAnglesFromSphereAngles(oldAngles)
-        newObject.rotation_euler = (eulerAngles[0],eulerAngles[1],eulerAngles[2])
-
-        #newObject.data.vertices = geo.rotateCircleOnSphereAxis(objectVerts,oldAngles)
-
-        scene.collection.objects.link(newObject)
+        leafSegment =[previousPosition,oldAngles,currentPosition]
+        leafSegments.append(leafSegment)
 
     while(currentRayPrecent>=stopCircleRayPrecent and splitStop==0):
 
+        previousPosition = currentPosition
         rayInterval = [(raySphereInterval[0]/100)*currentRayPrecent,(raySphereInterval[1]/100)*currentRayPrecent]
         positionAndAngles = geo.PickPointInSemiSphere(currentPosition, rayInterval=rayInterval,
                                                       initialAngles=[0, 0], anglesIntervals=anglesIntervals,
@@ -143,7 +169,9 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,oldAngles,isMai
         #ThicknessProblemFix
         minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(initialShape)
 
-        shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,currentRayPrecent,deformities=[])
+        deformities = DeformitiesCheck(deformities,initialShape,minDeformedCircleRay)
+
+        shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,currentRayPrecent,deformities=deformities)
         shape= geo.rotateCircleOnSphereAxis(shape,initialAngles)
         newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
 
@@ -162,6 +190,7 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,oldAngles,isMai
             numberOfSplits = random.randint(splitInterval[0],splitInterval[1])
             treeSplit = Split(currentPosition, currentCircleNumber, anglesIntervals, rayInterval, initialAngles=[0,0],
                               branchSplitNumber=numberOfSplits,currentRayPrecent = currentRayPrecent)
+            previousPosition = currentPosition
 
             for j in range(0,len(treeSplit)):
                 currentPosition = treeSplit[j][0]
@@ -170,11 +199,13 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,oldAngles,isMai
                 #Thickness Problem Fix
                 minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(initialShape)
 
+                deformities = DeformitiesCheck(deformities, initialShape, minDeformedCircleRay)
+
                 currentRayPrecent = treeSplit[j][2]
                 previousCircleNumber = treeSplit[j][3]
                 sectionAngles = treeSplit[j][4]
 
-                shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, currentRayPrecent, deformities=[])
+                shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, currentRayPrecent, deformities=deformities)
                 shape = geo.rotateCircleOnSphereAxis(shape, initialAngles)
                 newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
                 bodyCilynder.append(newShapePlacement)
@@ -185,78 +216,32 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,oldAngles,isMai
                 branchIdentifier = j + isMainBranch
 
                 if(branchIdentifier==mainBranch):
-                    branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber, initialAngles,
+                    branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber, previousPosition, initialAngles,
                                                                branchIdentifier, anglesIntervals, currentRayPrecent,
                                                                rayReductionPrecentPerStep, raySphereInterval,
-                                                               startingSplitChance, splitChanceGain)
+                                                               startingSplitChance, splitChanceGain, deformities)
                 else:
                     deviantAnglesIntervals = DetermineZAngleInterval(initialAngles,anglesIntervals)
                     deviantAnglesIntervals[1] = sectionAngles[1]
-                    branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber, initialAngles,
+                    branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber, previousPosition, initialAngles,
                                                                branchIdentifier, deviantAnglesIntervals, currentRayPrecent,
                                                                rayReductionPrecentPerStep, raySphereInterval,
-                                                               startingSplitChance, splitChanceGain)
+                                                               startingSplitChance, splitChanceGain, deformities)
 
 
                 bodyCilynder.extend(branchCirclesAndFaces[0])
                 bodyCilynderFaces.extend(branchCirclesAndFaces[1])
+                leafSegments.extend(branchCirclesAndFaces[2])
 
         else:
             startingSplitChance+=splitChanceGain
+            if (currentRayPrecent < stopCircleRayPrecent):
+                leafSegment = [previousPosition, oldAngles, currentPosition]
+                leafSegments.append(leafSegment)
 
     # remove the initial stump face
     bodyCilynder.pop(0)
-    return [bodyCilynder, bodyCilynderFaces]
-
-
-def GrowTrunk(iterations,currentPosition,shape,initialCircle,randomIntervalTouple,deformities,mutationChance,mutationFactor):
-    bodyCilynder=[]
-    bodyCilynderFaces = []
-    bodyCilynder.append(shape)
-
-    nrCircle = initialCircle
-
-    initialAngles = [0,0]
-    anglesIntervals = [[0,math.pi/6],[0,math.pi*2]]
-
-    for i in range(1,iterations):
-        positionAndAngles = geo.PickPointInSemiSphere(currentPosition, rayInterval = [2,2], initialAngles = [0,0], anglesIntervals = anglesIntervals, precision = precision)
-
-        currentPosition = positionAndAngles[0]
-        initialAngles = positionAndAngles[1]
-
-        maxDeformedCircleRay = geo.FindMaxRayOfDeformedCircle(shape)
-        minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(shape)
-        #mutationInterval =[0,maxDeformedCircleRay-minDeformedCircleRay]
-        #deformities = geo.MutateValues(deformities, mutationInterval, mutationFactor, mutationChance, precision=2)
-
-        shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,99-i/50,deformities=[])
-        shape= geo.rotateCircleOnSphereAxis(shape,initialAngles)
-        newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
-
-        bodyCilynder.append(newShapePlacement)
-
-        nrCircle += 1
-        bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), initialCircle, nrCircle))
-        initialCircle = nrCircle
-
-        if(i==9):
-            treeSplit=Split(currentPosition,shape,nrCircle,anglesIntervals,[3,8],initialAngles = [0,0],branchSplitNumber=5)
-            for j in range(0,len(treeSplit)):
-                currentPosition = treeSplit[j][0]
-                initialAngles = treeSplit[j][1]
-                minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(shape)
-                shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, treeSplit[j][2], deformities=[])
-                shape = geo.rotateCircleOnSphereAxis(shape, initialAngles)
-                newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
-                bodyCilynder.append(newShapePlacement)
-                nrCircle +=1
-                bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), treeSplit[j][3], nrCircle))
-
-
-    #remove the initial stump face
-    bodyCilynder.pop(0)
-    return [bodyCilynder,bodyCilynderFaces]
+    return [bodyCilynder, bodyCilynderFaces, leafSegments]
 
 
 #==============================================================
@@ -266,7 +251,9 @@ currentCircleNumber = 0
 nrCircleVertexes=60
 precision = 2
 circleRay=3
-stumpAbruptness = 2
+stumpAbruptness = 3
+
+#Bark
 barkMutationChance=0.5
 barkMutationFactor=4#Lower factor = more noticeable, Greater = less noticeable
 
@@ -308,9 +295,11 @@ currentCircleNumber = lastCircleNumber
 lastStumpCirclePosition = (0,0,circle[0][2])
 
 #trunk = GrowTrunk(10,(0,0,circle[0][2]),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
-trunk = GrowBranchingTrunk(currentPosition=lastStumpCirclePosition, shape=circle, initialCircleNumber=lastCircleNumber, oldAngles=[0,0],
+trunk = GrowBranchingTrunk(currentPosition=lastStumpCirclePosition, shape=circle, initialCircleNumber=lastCircleNumber, previousPosition= lastStumpCirclePosition, oldAngles=[0,0],
                            isMainBranch= 0, anglesIntervals= anglesIntervals,currentRayPrecent=100,rayReductionPrecentPerStep=rayReductionPrecentPerStep,
-                           raySphereInterval= raySphereInterval,startingSplitChance= startingSplitChance, splitChanceGain= splichanceGain)
+                           raySphereInterval= raySphereInterval,startingSplitChance= startingSplitChance, splitChanceGain= splichanceGain, deformities= [])
+
+leafSegments = trunk[2]
 
 for tCircle in trunk[0]:
     verts.extend(tCircle)
@@ -318,8 +307,8 @@ for tCircle in trunk[0]:
 #=======================
 faces.extend(trunk[1])
 # create mesh and object
-mymesh = bpy.data.meshes.new("myshape")
-myobject = bpy.data.objects.new("myshape", mymesh)
+mymesh = bpy.data.meshes.new("Tree")
+myobject = bpy.data.objects.new("Tree", mymesh)
 
 # set mesh location
 myobject.location = (0, 0, 0)
@@ -329,4 +318,8 @@ scene.collection.objects.link(myobject)
 # create mesh from python data
 mymesh.from_pydata(verts, edges, faces)
 mymesh.update(calc_edges=True)
+
+GrowLeaves(leafSegments,"Tree","Leaf")
+
+
 
