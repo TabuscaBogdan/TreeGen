@@ -320,6 +320,23 @@ def rotateCircleOnSphereAxis(circle,angles):
                            ]
     return rotate(len(circle),circle,rotationMatrixOnAxis)
 
+def getEulerAnglesFromSphereAngles(angles):
+    theta = angles[0]
+    sigma = angles[1]
+    rotationMatrixOnAxis = [[math.cos(theta) + (1 - math.cos(theta)) * (math.sin(sigma) ** 2),
+                             -(1 - math.cos(theta)) * math.sin(sigma) * math.cos(sigma),
+                             math.sin(sigma) * math.cos(sigma)],
+                            [-(1 - math.cos(theta)) * math.sin(sigma) * math.cos(sigma),
+                             math.cos(theta) + (1 - math.cos(theta)) * (math.cos(theta) ** 2),
+                             math.sin(theta) * math.sin(sigma)],
+                            [-math.sin(theta) * math.cos(sigma), -math.sin(theta) * math.sin(sigma), math.cos(theta)]
+                            ]
+    x = math.atan2(rotationMatrixOnAxis[2][1],rotationMatrixOnAxis[2][2])
+    y = math.atan2(-rotationMatrixOnAxis[2][0],math.sqrt(rotationMatrixOnAxis[2][1]**2+rotationMatrixOnAxis[2][2]**2))
+    z = math.atan2(rotationMatrixOnAxis[1][0],rotationMatrixOnAxis[0][0])
+
+    return [x,y,z]
+
 #==============================Noise==========================================================
 
 def AddDirectionNoiseXY(position,tupleRayInterval,intervalDecimalNumber=1):

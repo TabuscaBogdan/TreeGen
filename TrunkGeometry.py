@@ -104,7 +104,7 @@ def Split(currentPosition,circleNumber,anglesIntervals,sphereRayInterval,initial
 
     return branches
 
-def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,isMainBranch, anglesIntervals, currentRayPrecent,rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain):
+def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,oldAngles,isMainBranch, anglesIntervals, currentRayPrecent,rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain):
     bodyCilynder = []
     bodyCilynderFaces = []
     bodyCilynder.append(shape)
@@ -113,6 +113,20 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,isMainBranch, a
 
     splitStop=0
     mainBranch=0
+
+    if(currentRayPrecent<stopCircleRayPrecent):
+        scene = bpy.context.scene
+        sourceObject = bpy.data.objects['flower']
+        newObject = sourceObject.copy()
+        newObject.data = sourceObject.data.copy()
+        newObject.location = currentPosition
+
+        eulerAngles=geo.getEulerAnglesFromSphereAngles(oldAngles)
+        newObject.rotation_euler = (eulerAngles[0],eulerAngles[1],eulerAngles[2])
+
+        #newObject.data.vertices = geo.rotateCircleOnSphereAxis(objectVerts,oldAngles)
+
+        scene.collection.objects.link(newObject)
 
     while(currentRayPrecent>=stopCircleRayPrecent and splitStop==0):
 
@@ -171,14 +185,14 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,isMainBranch, a
                 branchIdentifier = j + isMainBranch
 
                 if(branchIdentifier==mainBranch):
-                    branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber,
+                    branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber, initialAngles,
                                                                branchIdentifier, anglesIntervals, currentRayPrecent,
                                                                rayReductionPrecentPerStep, raySphereInterval,
                                                                startingSplitChance, splitChanceGain)
                 else:
                     deviantAnglesIntervals = DetermineZAngleInterval(initialAngles,anglesIntervals)
                     deviantAnglesIntervals[1] = sectionAngles[1]
-                    branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber,
+                    branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber, initialAngles,
                                                                branchIdentifier, deviantAnglesIntervals, currentRayPrecent,
                                                                rayReductionPrecentPerStep, raySphereInterval,
                                                                startingSplitChance, splitChanceGain)
@@ -261,13 +275,13 @@ stopCircleRayPrecent = 30
 rayReductionPrecentPerStep = 2
 raySphereInterval = [circleRay,circleRay*2]
 
-anglesIntervals = [[0,math.pi/4],[0,math.pi*2]]
+anglesIntervals = [[-math.pi/5,math.pi/5],[0,math.pi*2]]
 maxBranchAngleDeviation = math.pi/1.2
 minBranchAngleDeviation = -maxBranchAngleDeviation #anglesIntervals[0][0]
 
 splitInterval = [2,3]
-startingSplitChance = 10
-splichanceGain = 2
+startingSplitChance = 0
+splichanceGain = 3
 
 mainBranchMinimumThicknessReductionOnSplit =1.1
 secondaryBranchMinimumThicknessReductionOnSplit = 1.1
@@ -294,7 +308,7 @@ currentCircleNumber = lastCircleNumber
 lastStumpCirclePosition = (0,0,circle[0][2])
 
 #trunk = GrowTrunk(10,(0,0,circle[0][2]),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
-trunk = GrowBranchingTrunk(currentPosition=lastStumpCirclePosition, shape=circle, initialCircleNumber=lastCircleNumber,
+trunk = GrowBranchingTrunk(currentPosition=lastStumpCirclePosition, shape=circle, initialCircleNumber=lastCircleNumber, oldAngles=[0,0],
                            isMainBranch= 0, anglesIntervals= anglesIntervals,currentRayPrecent=100,rayReductionPrecentPerStep=rayReductionPrecentPerStep,
                            raySphereInterval= raySphereInterval,startingSplitChance= startingSplitChance, splitChanceGain= splichanceGain)
 
