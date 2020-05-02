@@ -114,7 +114,24 @@ def Split(currentPosition,circleNumber,anglesIntervals,sphereRayInterval,initial
 
     return branches
 
-def GrowLeaves(leafSegments,TreeMeshName,LeafMeshName):
+def AddLeaf(angles, extraRotation, endPoint, scene, sourceObject, parentObject):
+    xRot=extraRotation[0]
+    yRot=extraRotation[1]
+    zRot=extraRotation[2]
+
+    bpy.context.view_layer.objects.active = parentObject
+
+    newObject = sourceObject.copy()
+    newObject.data = sourceObject.data.copy()
+    newObject.location = endPoint
+    eulerAngles = geo.getEulerAnglesFromSphereAngles(angles)
+    #newObject.rotation_euler = (eulerAngles[0]+xRot, eulerAngles[1]+yRot, eulerAngles[2]+zRot)
+    newObject.rotation_euler = (xRot, yRot, eulerAngles[2] + zRot)
+    # newObject.parent = parentObject
+    scene.collection.objects.link(newObject)
+
+
+def GrowLeaves(leafSegments,TreeMeshName,LeafMeshName,hasEndingLeaf=1):
     scene = bpy.context.scene
     sourceObject = bpy.data.objects[LeafMeshName]
     parentObject = bpy.data.objects[TreeMeshName]
@@ -124,18 +141,47 @@ def GrowLeaves(leafSegments,TreeMeshName,LeafMeshName):
         startPoint = segment[0]
         angles = segment[1]
         endPoint = segment[2]
+        distance = geo.CalculateDistanceBetweenTwoPoints(startPoint,endPoint)
 
-        newObject = sourceObject.copy()
-        newObject.data = sourceObject.data.copy()
-        newObject.location = endPoint
+        deviation = random.randint(0, 360)
+        zLeafRotation = (math.pi / 180) * deviation
+        xLeafRotation, yLeafRotation = WindDeviation()
+        extraRotation = [xLeafRotation, yLeafRotation, zLeafRotation]
 
-        eulerAngles = geo.getEulerAnglesFromSphereAngles(angles)
-        newObject.rotation_euler = (eulerAngles[0], eulerAngles[1], eulerAngles[2])
+        if(hasEndingLeaf!=0):
+            AddLeaf(angles, extraRotation , endPoint, scene, sourceObject, parentObject)
 
-        #newObject.parent = parentObject
-        scene.collection.objects.link(newObject)
+        leafNumber = random.randint(leavesPerBranch[0],leavesPerBranch[1])
+        unitDistance = (distance/leavesPerBranch[1])/leavesDistance
+        position = endPoint
+        for i in range(0,leafNumber):
+            if(i%2==1):
+                leafDistance = (distance-(unitDistance * i))/distance
+                x = startPoint[0]+leafDistance*(endPoint[0]-startPoint[0])
+                y = startPoint[1] + leafDistance * (endPoint[1] - startPoint[1])
+                z = startPoint[2] + leafDistance * (endPoint[2] - startPoint[2])
+                position = tuple([x,y,z])
+
+                deviation = random.randint(leafRotationAngleDeviation[0],leafRotationAngleDeviation[1])
+                zLeafRotation =(math.pi/180)*90+(math.pi/180)*deviation +extraRotation[2]
+                xLeafRotation, yLeafRotation = WindDeviation()
+                secondaryRotations = [xLeafRotation, yLeafRotation, zLeafRotation]
+
+                AddLeaf(angles, secondaryRotations, position, scene, sourceObject, parentObject)
+            else:
+                deviation = random.randint(leafRotationAngleDeviation[0], leafRotationAngleDeviation[1])
+                zLeafRotation = math.pi + (math.pi / 180) * deviation+extraRotation[2]
+                xLeafRotation, yLeafRotation = WindDeviation()
+                secondaryRotations = [xLeafRotation, yLeafRotation, zLeafRotation]
+                AddLeaf(angles, secondaryRotations, position, scene, sourceObject, parentObject)
 
 
+def WindDeviation():
+    minorDeviation = random.randint(int(leafRotationAngleDeviation[0] / 2), int(leafRotationAngleDeviation[1] / 2))
+    yLeafRotation = (math.pi / 180) * minorDeviation
+    minorDeviation = random.randint(int(leafRotationAngleDeviation[0] / 2), int(leafRotationAngleDeviation[1] / 2))
+    xLeafRotation = (math.pi / 180) * minorDeviation
+    return xLeafRotation, yLeafRotation
 
 
 def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPosition,oldAngles,isMainBranch, anglesIntervals, currentRayPrecent,rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain, deformities):
@@ -272,6 +318,10 @@ splichanceGain = 3
 
 mainBranchMinimumThicknessReductionOnSplit =1.1
 secondaryBranchMinimumThicknessReductionOnSplit = 1.1
+#Leaves
+leavesPerBranch = [3,8]
+leavesDistance = 1# greater number = smaller distance between leaves
+leafRotationAngleDeviation = [-30,30]
 #================
 
 
