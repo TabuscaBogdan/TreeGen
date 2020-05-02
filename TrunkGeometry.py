@@ -24,6 +24,7 @@ stumpSpec.loader.exec_module(sGeo)
 verts = []
 faces = []
 edges = []
+treeObjects = []
 
 
 def DeformitiesCheck(deformities,initialShape,minDeformedCircleRay):
@@ -114,12 +115,24 @@ def Split(currentPosition,circleNumber,anglesIntervals,sphereRayInterval,initial
 
     return branches
 
-def AddLeaf(angles, extraRotation, endPoint, scene, sourceObject, parentObject):
+def JoinTreeObjectsWithTree(tree):
+    global treeObjects
+    #join leaf with Trunk
+    tree.select_set(True)
+    bpy.context.view_layer.objects.active = tree
+    for treeObject in treeObjects:
+        treeObject.select_set(True)
+
+    bpy.ops.object.join()
+    bpy.ops.object.select_all(action='DESELECT')
+    treeObjects = []
+
+def AddLeaf(angles, extraRotation, endPoint, scene, sourceObject):
     xRot=extraRotation[0]
     yRot=extraRotation[1]
     zRot=extraRotation[2]
 
-    bpy.context.view_layer.objects.active = parentObject
+    global treeObjects
 
     newObject = sourceObject.copy()
     newObject.data = sourceObject.data.copy()
@@ -129,6 +142,7 @@ def AddLeaf(angles, extraRotation, endPoint, scene, sourceObject, parentObject):
     newObject.rotation_euler = (xRot, yRot, eulerAngles[2] + zRot)
     # newObject.parent = parentObject
     scene.collection.objects.link(newObject)
+    treeObjects.append(newObject)
 
 
 def GrowLeaves(leafSegments,TreeMeshName,LeafMeshName,hasEndingLeaf=1):
@@ -149,7 +163,7 @@ def GrowLeaves(leafSegments,TreeMeshName,LeafMeshName,hasEndingLeaf=1):
         extraRotation = [xLeafRotation, yLeafRotation, zLeafRotation]
 
         if(hasEndingLeaf!=0):
-            AddLeaf(angles, extraRotation , endPoint, scene, sourceObject, parentObject)
+            AddLeaf(angles, extraRotation , endPoint, scene, sourceObject)
 
         leafNumber = random.randint(leavesPerBranch[0],leavesPerBranch[1])
         unitDistance = (distance/leavesPerBranch[1])/leavesDistance
@@ -167,13 +181,13 @@ def GrowLeaves(leafSegments,TreeMeshName,LeafMeshName,hasEndingLeaf=1):
                 xLeafRotation, yLeafRotation = WindDeviation()
                 secondaryRotations = [xLeafRotation, yLeafRotation, zLeafRotation]
 
-                AddLeaf(angles, secondaryRotations, position, scene, sourceObject, parentObject)
+                AddLeaf(angles, secondaryRotations, position, scene, sourceObject)
             else:
                 deviation = random.randint(leafRotationAngleDeviation[0], leafRotationAngleDeviation[1])
                 zLeafRotation = math.pi + (math.pi / 180) * deviation+extraRotation[2]
                 xLeafRotation, yLeafRotation = WindDeviation()
                 secondaryRotations = [xLeafRotation, yLeafRotation, zLeafRotation]
-                AddLeaf(angles, secondaryRotations, position, scene, sourceObject, parentObject)
+                AddLeaf(angles, secondaryRotations, position, scene, sourceObject)
 
 
 def WindDeviation():
@@ -294,7 +308,7 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPositio
 #====Globals=====
 currentCircleNumber = 0
 #===Parameters===
-nrCircleVertexes=60
+nrCircleVertexes=30
 precision = 2
 circleRay=3
 stumpAbruptness = 3
@@ -313,7 +327,7 @@ maxBranchAngleDeviation = math.pi/1.2
 minBranchAngleDeviation = -maxBranchAngleDeviation #anglesIntervals[0][0]
 
 splitInterval = [2,3]
-startingSplitChance = 0
+startingSplitChance = 10
 splichanceGain = 3
 
 mainBranchMinimumThicknessReductionOnSplit =1.1
@@ -370,6 +384,7 @@ mymesh.from_pydata(verts, edges, faces)
 mymesh.update(calc_edges=True)
 
 GrowLeaves(leafSegments,"Tree","Leaf")
+JoinTreeObjectsWithTree(myobject)
 
 
 
