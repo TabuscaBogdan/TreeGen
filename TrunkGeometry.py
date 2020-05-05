@@ -327,15 +327,17 @@ maxBranchAngleDeviation = math.pi/1.2
 minBranchAngleDeviation = -maxBranchAngleDeviation #anglesIntervals[0][0]
 
 splitInterval = [2,3]
-startingSplitChance = 10
-splichanceGain = 3
+startingSplitChance = 20
+splichanceGain = 1
 
 mainBranchMinimumThicknessReductionOnSplit =1.1
 secondaryBranchMinimumThicknessReductionOnSplit = 1.1
 #Leaves
-leavesPerBranch = [3,8]
+leavesPerBranch = [5,10]
 leavesDistance = 1# greater number = smaller distance between leaves
 leafRotationAngleDeviation = [-30,30]
+#Materials
+barkMaterialName = "Clay"
 #================
 
 
@@ -373,6 +375,9 @@ faces.extend(trunk[1])
 # create mesh and object
 mymesh = bpy.data.meshes.new("Tree")
 myobject = bpy.data.objects.new("Tree", mymesh)
+#assign material
+mat = bpy.data.materials.get(barkMaterialName)
+myobject.data.materials.append(mat)
 
 # set mesh location
 myobject.location = (0, 0, 0)
