@@ -232,7 +232,7 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPositio
         deformities = DeformitiesCheck(deformities,initialShape,minDeformedCircleRay)
 
         shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,currentRayPrecent,deformities=deformities)
-        shape= geo.rotateCircleOnSphereAxis(shape,initialAngles)
+        shape = geo.rotateCircleOnSphereAxis(shape,initialAngles)
         newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
 
         currentRayPrecent -= rayReductionPrecentPerStep
@@ -314,8 +314,8 @@ circleRay=3
 stumpAbruptness = 3
 
 #Bark
-barkMutationChance=0.5
-barkMutationFactor=4#Lower factor = more noticeable, Greater = less noticeable
+barkMutationChance = 0.5
+barkMutationFactor = 4  #Lower factor = more noticeable, Greater = less noticeable
 
 #Branching
 stopCircleRayPrecent = 30
