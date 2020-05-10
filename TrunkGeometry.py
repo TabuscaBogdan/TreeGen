@@ -305,6 +305,98 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPositio
 
 
 #==============================================================
+def SetTreeProperties(TreeGeneralProp,TreeBarkProp,TreeBranchingProp,TreeLeavesProp):
+    #===General===
+    global nrCircleVertexes, precision, circleRay, stumpAbruptness
+    nrCircleVertexes = TreeGeneralProp.nrCircleVertices
+    circleRay = TreeGeneralProp.circleRay
+    stumpAbruptness = TreeGeneralProp.stumpAbruptness
+    precision = TreeGeneralProp.precision
+    #============
+    #===Bark===
+    global enableBark, barkMutationChance, barkMutationFactor, barkMaterialName
+    enableBark = TreeBarkProp.barkDeformities
+    barkMutationChance = TreeBarkProp.barkMutationChance
+    barkMutationFactor = TreeBarkProp.barkMutationFactor
+    barkMaterialName = TreeBarkProp.barkMaterialName
+    #==========
+    #===Branching===
+    global stopCircleRayPrecent, rayReductionPrecentPerStep, raySphereInterval
+    global anglesIntervals, maxBranchAngleDeviation, minBranchAngleDeviation
+    global splitInterval, startingSplitChance, splichanceGain
+    stopCircleRayPrecent = TreeBranchingProp.stopCircleRayPrecent
+    rayReductionPrecentPerStep = TreeBranchingProp.rayReductionPrecentPerStep
+    raySphereInterval = [circleRay, circleRay*2]
+    anglesIntervals = [[-math.pi/TreeBranchingProp.angleIntervalDiv, math.pi/TreeBranchingProp.angleIntervalDiv], [0, math.pi*2]]
+    maxBranchAngleDeviation = math.pi/TreeBranchingProp.maxBranchingAngleDeviationDiv
+    minBranchAngleDeviation = -maxBranchAngleDeviation
+    splitInterval = [TreeBranchingProp.splitIntervalMinim, TreeBranchingProp.splitIntervalMaxim]
+    startingSplitChance = TreeBranchingProp.startingSplitChance
+    splichanceGain = TreeBranchingProp.splitChanceGain
+    #==============
+    #===Leaves===
+    global leavesPerBranch, leavesDistance, leafRotationAngleDeviation, leafObjectName
+    leavesPerBranch = [TreeLeavesProp.leavesPerBranchInferiorLimit, TreeLeavesProp.leavesPerBranchSuperiorLimit]
+    leavesDistance = TreeLeavesProp.leavesDistance
+    leafObjectName = TreeLeavesProp.leafObjectName
+    leafRotationAngleDeviation = [-TreeLeavesProp.leafRotationAngleDeviationFactor, TreeLeavesProp.leafRotationAngleDeviationFactor]
+
+def CreateTree():
+    verts = []
+    faces = []
+    deformities = geo.SmoothRandom((0, 2), 1, nrCircleVertexes)
+    # Stump============
+    stumpCircles = sGeo.CalculateStumpCircles(nrCircleVertexes, circleRay, deformities, stumpAbruptness, height=1,
+                                              finese=0.1)
+
+    verts.extend(geo.ConvertCirclesToVerts(stumpCircles))
+    faces.extend(sGeo.CalculateStumpFaces(stumpCircles))
+    faces.append(geo.CalculateCircleFace(nrCircleVertexes, verts))
+    circle = stumpCircles[-1]
+
+    deformities = geo.FindCircleDeformities(circle)
+
+    global currentCircleNumber
+    lastCircleNumber = len(stumpCircles) - 1
+    currentCircleNumber = lastCircleNumber
+
+    lastStumpCirclePosition = (0, 0, circle[0][2])
+
+    if enableBark == False:
+        deformities = []
+
+    trunk = GrowBranchingTrunk(currentPosition=lastStumpCirclePosition, shape=circle,
+                               initialCircleNumber=lastCircleNumber, previousPosition=lastStumpCirclePosition,
+                               oldAngles=[0, 0],
+                               isMainBranch=0, anglesIntervals=anglesIntervals, currentRayPrecent=100,
+                               rayReductionPrecentPerStep=rayReductionPrecentPerStep,
+                               raySphereInterval=raySphereInterval, startingSplitChance=startingSplitChance,
+                               splitChanceGain=splichanceGain, deformities=deformities)
+
+    leafSegments = trunk[2]
+
+    for tCircle in trunk[0]:
+        verts.extend(tCircle)
+    faces.extend(trunk[1])
+
+    # create mesh and object
+    mymesh = bpy.data.meshes.new("Tree")
+    myobject = bpy.data.objects.new("Tree", mymesh)
+    # assign material
+    mat = bpy.data.materials.get(barkMaterialName)
+    myobject.data.materials.append(mat)
+    # set mesh location
+    myobject.location = (0, 0, 0)
+    scene = bpy.context.scene
+    scene.collection.objects.link(myobject)
+
+    mymesh.from_pydata(verts, edges, faces)
+    mymesh.update(calc_edges=True)
+
+    GrowLeaves(leafSegments, "Tree", leafObjectName)
+    JoinTreeObjectsWithTree(myobject)
+
+
 #====Globals=====
 currentCircleNumber = 0
 #===Parameters===
@@ -314,6 +406,7 @@ circleRay=3
 stumpAbruptness = 3
 
 #Bark
+enableBark = False
 barkMutationChance = 0.5
 barkMutationFactor = 4  #Lower factor = more noticeable, Greater = less noticeable
 
@@ -338,58 +431,11 @@ leavesDistance = 1# greater number = smaller distance between leaves
 leafRotationAngleDeviation = [-30,30]
 #Materials
 barkMaterialName = "Clay"
+#Objects
+leafObjectName = "Leaf"
 #================
 
-
-deformities = geo.SmoothRandom((0, 2), 1, nrCircleVertexes)
-
-#Stump============
-stumpCircles = sGeo.CalculateStumpCircles(nrCircleVertexes, circleRay, deformities, stumpAbruptness, height=1, finese=0.1)
-
-verts.extend(geo.ConvertCirclesToVerts(stumpCircles))
-faces.extend(sGeo.CalculateStumpFaces(stumpCircles))
-faces.append(geo.CalculateCircleFace(nrCircleVertexes,verts))
-#=================
-
-circle = stumpCircles[-1]
-
-deformities=geo.FindCircleDeformities(circle)
-
-lastCircleNumber=len(stumpCircles)-1
-currentCircleNumber = lastCircleNumber
-
-lastStumpCirclePosition = (0,0,circle[0][2])
-
-#trunk = GrowTrunk(10,(0,0,circle[0][2]),circle,lastCircleNumber,(-0.2,0.2),deformities,barkMutationChance,barkMutationFactor,1)
-trunk = GrowBranchingTrunk(currentPosition=lastStumpCirclePosition, shape=circle, initialCircleNumber=lastCircleNumber, previousPosition= lastStumpCirclePosition, oldAngles=[0,0],
-                           isMainBranch= 0, anglesIntervals= anglesIntervals,currentRayPrecent=100,rayReductionPrecentPerStep=rayReductionPrecentPerStep,
-                           raySphereInterval= raySphereInterval,startingSplitChance= startingSplitChance, splitChanceGain= splichanceGain, deformities= [])
-
-leafSegments = trunk[2]
-
-for tCircle in trunk[0]:
-    verts.extend(tCircle)
-
-#=======================
-faces.extend(trunk[1])
-# create mesh and object
-mymesh = bpy.data.meshes.new("Tree")
-myobject = bpy.data.objects.new("Tree", mymesh)
-#assign material
-mat = bpy.data.materials.get(barkMaterialName)
-myobject.data.materials.append(mat)
-
-# set mesh location
-myobject.location = (0, 0, 0)
-scene = bpy.context.scene
-scene.collection.objects.link(myobject)
-
-# create mesh from python data
-mymesh.from_pydata(verts, edges, faces)
-mymesh.update(calc_edges=True)
-
-GrowLeaves(leafSegments,"Tree","Leaf")
-JoinTreeObjectsWithTree(myobject)
+CreateTree()
 
 
 
