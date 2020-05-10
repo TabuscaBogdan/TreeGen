@@ -1,6 +1,6 @@
 bl_info = {
     "name": "Realistic Trees Addon",
-    "description": "",
+    "description": "An Addon Used for creating Realistic Trees",
     "author": "Tabusca Bogdan",
     "version": (1, 0, 0),
     "blender": (2, 80, 0),
@@ -184,13 +184,8 @@ class TreeCreationPannel(Panel):
     bl_category = "TB Tree Creation"
     bl_context = "objectmode"
 
-    @classmethod
-    def poll(self, context):
-        return context.object is not None
-
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
 
 class TreeGeneralPropertiesPanel(TreeCreationPannel, Panel):
     bl_idname = "OBJECT_PT_TreeGeneralPropertiesPanelId"
@@ -287,10 +282,22 @@ class CreateTree(Operator):
 
     def execute(self, context):
         scene = context.scene
-        treeTool = scene.treeToolGeneral
+        treePropsGeneral = scene.treeToolGeneral
+        treePropsBark = scene.treeToolBark
+        treePropsBranching = scene.treeToolBranching
+        treePropsLeaves = scene.treeToolLeaves
 
-        print("I work!")
-        print("bool state:", treeTool.barkDeformities)
+        import importlib.util
+        TreeCreationScriptPath = "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\TrunkGeometry.py"
+        trunkSpec = importlib.util.spec_from_file_location("TrunkGeometry", TreeCreationScriptPath)
+        tGeo = importlib.util.module_from_spec(trunkSpec)
+        trunkSpec.loader.exec_module(tGeo)
+
+        tGeo.SetTreeProperties(treePropsGeneral,treePropsBark,treePropsBranching,treePropsLeaves)
+        tGeo.CreateTree()
+
+        print("Tree Grown!")
+        #print("bool state:", treeTool.barkDeformities)
 
         return {'FINISHED'}
 

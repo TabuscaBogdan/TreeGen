@@ -11,11 +11,6 @@ utilitySpec = importlib.util.spec_from_file_location("GeneralGeometry", utilityS
 geo = importlib.util.module_from_spec(utilitySpec)
 utilitySpec.loader.exec_module(geo)
 
-branchScriptPath= "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\BranchGeometry.py" #os.path.join(os.path.dirname(os.path.abspath( __file__ )),"BranchGeometry.py")
-branchSpec = importlib.util.spec_from_file_location("BranchGeometry", branchScriptPath)
-bGeo = importlib.util.module_from_spec(branchSpec)
-branchSpec.loader.exec_module(bGeo)
-
 stumpScriptPath= "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\StumpGeometry.py" #os.path.join(os.path.dirname(os.path.abspath( __file__ )),"StumpGeometry.py")
 stumpSpec = importlib.util.spec_from_file_location("StumpGeometry", stumpScriptPath)
 sGeo = importlib.util.module_from_spec(stumpSpec)
@@ -434,8 +429,8 @@ barkMaterialName = "Clay"
 #Objects
 leafObjectName = "Leaf"
 #================
-
-CreateTree()
+if __name__ == "__main__":
+    CreateTree()
 
 
 
