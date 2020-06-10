@@ -24,7 +24,7 @@ from bpy.types import Panel, Operator, PropertyGroup
 
 class TreeGeneralProprieties(PropertyGroup):
     nrCircleVertices: IntProperty(
-        name="Nr of Circle Verices",
+        name="Nr of Circle Vertices",
         description="How detailed the Tree will be",
         default = 30,
         min=3,

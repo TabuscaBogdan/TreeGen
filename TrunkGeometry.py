@@ -205,6 +205,7 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPositio
     mainBranch=0
 
     if(currentRayPrecent<stopCircleRayPrecent):
+        bodyCilynderFaces.append(geo.CalculateCircleFaceending(nrCircleVertexes, initialCircleNumber))
         leafSegment =[previousPosition,oldAngles,currentPosition]
         leafSegments.append(leafSegment)
 
@@ -293,6 +294,7 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPositio
             if (currentRayPrecent < stopCircleRayPrecent):
                 leafSegment = [previousPosition, oldAngles, currentPosition]
                 leafSegments.append(leafSegment)
+                bodyCilynderFaces.append(geo.CalculateCircleFaceending(nrCircleVertexes, initialCircleNumber))
 
     # remove the initial stump face
     bodyCilynder.pop(0)

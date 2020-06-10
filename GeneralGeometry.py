@@ -190,6 +190,12 @@ def CalculateCircleFace(nrCircleVertexes,circleVertexes):
         face+=(i,)
     return face
 
+def CalculateCircleFaceending(nrCircleVertexes,circleNumber):
+    face=(circleNumber*nrCircleVertexes,)
+    for i in range(1,nrCircleVertexes):
+        face+=(circleNumber*nrCircleVertexes+i,)
+    return face
+
 def CreateShapeOutOfCircleVertexes(nrCircleVertexes,circlesVertexes):
     nrOfVertexes = len(circlesVertexes)
     nrOfCircles = nrOfVertexes//nrCircleVertexes
