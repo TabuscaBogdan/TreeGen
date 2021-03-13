@@ -317,9 +317,24 @@ def rotateCircleOnAxis(circle,axis,angle):
         movedVertices.append(tuple([xRot,yRot,zRot]))
     return movedVertices
 
+def normalizeCircleRotationAnglesTo90(angle):
+    degreeAngle = math.degrees(angle)
+    sign = math.copysign(1,degreeAngle)
+    degreeAngle = abs(degreeAngle)
+    reducedDegreeAngle = degreeAngle % 180
+
+    if reducedDegreeAngle > 90:
+        norm90Degrees = -sign * 90 + (sign * reducedDegreeAngle -sign * 90)
+        angle = math.radians(norm90Degrees)
+    return angle
+
+
+
+
 def rotateCircleOnSphereAxis(circle,angles):
-    theta=angles[0]
-    sigma=angles[1]
+    theta=normalizeCircleRotationAnglesTo90(angles[0])
+    sigma=normalizeCircleRotationAnglesTo90(angles[1])
+
     rotationMatrixOnAxis =[[math.cos(theta)+(1-math.cos(theta))*(math.sin(sigma)**2), -(1-math.cos(theta))*math.sin(sigma)*math.cos(sigma), math.sin(sigma)*math.cos(sigma)],
                            [-(1-math.cos(theta))*math.sin(sigma)*math.cos(sigma), math.cos(theta)+(1-math.cos(theta))*(math.cos(theta)**2), math.sin(theta)*math.sin(sigma)],
                            [-math.sin(theta)*math.cos(sigma), -math.sin(theta)*math.sin(sigma), math.cos(theta)]

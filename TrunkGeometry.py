@@ -208,7 +208,9 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPositio
         bodyCilynderFaces.append(geo.CalculateCircleFaceending(nrCircleVertexes, initialCircleNumber))
         leafSegment =[previousPosition,oldAngles,currentPosition]
         leafSegments.append(leafSegment)
-
+#==========================================
+# In legatura cu Thickness problem, aplici ray precents pe cercuri care eu deja aplicate ray precenturile, nu pe cel initial
+#=======================================
     while(currentRayPrecent>=stopCircleRayPrecent and splitStop==0):
 
         previousPosition = currentPosition
