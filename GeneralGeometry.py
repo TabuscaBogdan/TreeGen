@@ -325,7 +325,7 @@ def normalizeCircleRotationAnglesTo90(angle):
 
     if reducedDegreeAngle > 90:
         norm90Degrees = -sign * 90 + (sign * reducedDegreeAngle -sign * 90)
-        angle = math.radians(norm90Degrees)
+        angle = norm90Degrees * math.pi/180  #math.radians(norm90Degrees) #returns higher end
     return angle
 
 
