@@ -222,7 +222,7 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPositio
         currentPosition = positionAndAngles[0]
         initialAngles = positionAndAngles[1]
 
-        initialShape = shape
+        initialShape = shape.copy()
 
         #ThicknessProblemFix
         minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(initialShape)
@@ -253,9 +253,6 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPositio
             for j in range(0,len(treeSplit)):
                 currentPosition = treeSplit[j][0]
                 initialAngles = treeSplit[j][1]
-
-                #Thickness Problem Fix
-                minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(initialShape)
 
                 deformities = DeformitiesCheck(deformities, initialShape, minDeformedCircleRay)
 

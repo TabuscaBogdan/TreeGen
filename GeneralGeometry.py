@@ -284,19 +284,6 @@ def rotate(nrCircleVertexes,circleVertexes,rotationMatrix):
         movedVertices.append(rotatedVertice)
     return movedVertices
 
-def rotateVerticesOnX(nrCircleVertexes,circleVertexes,angleRads):
-    rotationMatrixX=[[1,0,0],[0,math.cos(angleRads),-math.sin(angleRads)],[0,math.sin(angleRads),math.cos(angleRads)]]
-    return rotate(nrCircleVertexes,circleVertexes,rotationMatrixX)
-
-def rotateVerticesOnY(nrCircleVertexes,circleVertexes,angleRads):
-    rotationMatrixY=[[math.cos(angleRads),0,math.sin(angleRads)],[0,1,0],[-math.sin(angleRads),0,math.cos(angleRads)]]
-    return rotate(nrCircleVertexes, circleVertexes, rotationMatrixY)
-
-def rotateVerticesOnZ(nrCircleVertexes,circleVertexes,angleRads):
-    movedVertices=[]
-    rotationMatrixZ=[[math.cos(angleRads),-math.sin(angleRads),0],[math.sin(angleRads),math.cos(angleRads),0],[0,0,1]]
-    return rotate(nrCircleVertexes, circleVertexes, rotationMatrixZ)
-
 def rotateCircleOnAxis(circle,axis,angle):
     circleLength= len(circle)
     movedVertices = []
@@ -317,11 +304,12 @@ def rotateCircleOnAxis(circle,axis,angle):
         movedVertices.append(tuple([xRot,yRot,zRot]))
     return movedVertices
 
+
 def normalizeCircleRotationAnglesTo90(angle):
-    degreeAngle = math.degrees(angle)
-    sign = math.copysign(1,degreeAngle)
+    degreeAngle = angle*(180/math.pi)
+    sign = (angle>0) - (angle<0)
     degreeAngle = abs(degreeAngle)
-    reducedDegreeAngle = degreeAngle % 180
+    reducedDegreeAngle = degreeAngle % 180.0001
 
     if reducedDegreeAngle > 90:
         norm90Degrees = -sign * 90 + (sign * reducedDegreeAngle -sign * 90)
@@ -329,15 +317,15 @@ def normalizeCircleRotationAnglesTo90(angle):
     return angle
 
 
-
-
 def rotateCircleOnSphereAxis(circle,angles):
     theta=normalizeCircleRotationAnglesTo90(angles[0])
-    sigma=normalizeCircleRotationAnglesTo90(angles[1])
+    gama=normalizeCircleRotationAnglesTo90(angles[1])
+    iota = angles [0]
+    sigma= angles[1]
 
-    rotationMatrixOnAxis =[[math.cos(theta)+(1-math.cos(theta))*(math.sin(sigma)**2), -(1-math.cos(theta))*math.sin(sigma)*math.cos(sigma), math.sin(sigma)*math.cos(sigma)],
-                           [-(1-math.cos(theta))*math.sin(sigma)*math.cos(sigma), math.cos(theta)+(1-math.cos(theta))*(math.cos(theta)**2), math.sin(theta)*math.sin(sigma)],
-                           [-math.sin(theta)*math.cos(sigma), -math.sin(theta)*math.sin(sigma), math.cos(theta)]
+    rotationMatrixOnAxis =[[math.cos(theta)+(1-math.cos(theta))*(math.sin(gama)**2), -(1-math.cos(theta))*math.sin(gama)*math.cos(gama), math.sin(sigma)*math.cos(sigma)],
+                           [-(1-math.cos(theta))*math.sin(gama)*math.cos(gama), math.cos(theta)+(1-math.cos(theta))*(math.cos(theta)**2), math.sin(iota)*math.sin(sigma)],
+                           [-math.sin(iota)*math.cos(sigma), -math.sin(iota)*math.sin(sigma), math.cos(iota)]
                            ]
     return rotate(len(circle),circle,rotationMatrixOnAxis)
 
