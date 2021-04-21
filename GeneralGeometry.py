@@ -320,12 +320,11 @@ def normalizeCircleRotationAnglesTo90(angle):
 def rotateCircleOnSphereAxis(circle,angles):
     theta=normalizeCircleRotationAnglesTo90(angles[0])
     gama=normalizeCircleRotationAnglesTo90(angles[1])
-    iota = angles [0]
     sigma= angles[1]
 
     rotationMatrixOnAxis =[[math.cos(theta)+(1-math.cos(theta))*(math.sin(gama)**2), -(1-math.cos(theta))*math.sin(gama)*math.cos(gama), math.sin(sigma)*math.cos(sigma)],
-                           [-(1-math.cos(theta))*math.sin(gama)*math.cos(gama), math.cos(theta)+(1-math.cos(theta))*(math.cos(theta)**2), math.sin(iota)*math.sin(sigma)],
-                           [-math.sin(iota)*math.cos(sigma), -math.sin(iota)*math.sin(sigma), math.cos(iota)]
+                           [-(1-math.cos(theta))*math.sin(gama)*math.cos(gama), math.cos(theta)+(1-math.cos(theta))*(math.cos(theta)**2), math.sin(theta)*math.sin(sigma)],
+                           [-math.sin(theta)*math.cos(sigma), -math.sin(theta)*math.sin(sigma), math.cos(theta)]
                            ]
     return rotate(len(circle),circle,rotationMatrixOnAxis)
 

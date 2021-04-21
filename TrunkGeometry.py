@@ -64,7 +64,7 @@ def CalculateSplitBranchThickness(nrOfbranches):
     mainBranchMaxThickness=100 #precent
     mainBranchMinThickness= int(mainBranchMaxThickness/mainBranchMinimumThicknessReductionOnSplit)
 
-    secondaryBranchMaxThickness = 95 #precent
+    secondaryBranchMaxThickness = 98 #precent
     secondaryBranchMinThickness = int(secondaryBranchMaxThickness/secondaryBranchMinimumThicknessReductionOnSplit)
 
     mainBranchRayPrecent = random.randrange(mainBranchMinThickness,mainBranchMaxThickness)
@@ -193,16 +193,19 @@ def WindDeviation():
     return xLeafRotation, yLeafRotation
 
 
-def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPosition,oldAngles,isMainBranch, anglesIntervals, currentRayPrecent,rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain, deformities):
+def GrowBranchingTrunk(currentPosition,initialShape,initialCircleNumber,previousPosition,oldAngles,isMainBranch, anglesIntervals, currentRayPrecent,rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain, deformities):
     bodyCilynder = []
     bodyCilynderFaces = []
     leafSegments = []
-    bodyCilynder.append(shape)
+    bodyCilynder.append(initialShape)
     global currentCircleNumber
     global splitInterval
 
     splitStop=0
     mainBranch=0
+
+    # ThicknessProblemFix
+    minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(initialShape)
 
     if(currentRayPrecent<stopCircleRayPrecent):
         bodyCilynderFaces.append(geo.CalculateCircleFaceending(nrCircleVertexes, initialCircleNumber))
@@ -222,14 +225,9 @@ def GrowBranchingTrunk(currentPosition,shape,initialCircleNumber,previousPositio
         currentPosition = positionAndAngles[0]
         initialAngles = positionAndAngles[1]
 
-        initialShape = shape.copy()
-
-        #ThicknessProblemFix
-        minDeformedCircleRay = geo.FindMinRayOfDeformedCircle(initialShape)
-
         deformities = DeformitiesCheck(deformities,initialShape,minDeformedCircleRay)
 
-        shape = geo.CalculateResizedDeformedCircle(len(shape),minDeformedCircleRay,currentRayPrecent,deformities=deformities)
+        shape = geo.CalculateResizedDeformedCircle(len(initialShape),minDeformedCircleRay,currentRayPrecent,deformities=deformities)
         shape = geo.rotateCircleOnSphereAxis(shape,initialAngles)
         newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
 
@@ -361,7 +359,7 @@ def CreateTree():
     if enableBark == False:
         deformities = []
 
-    trunk = GrowBranchingTrunk(currentPosition=lastStumpCirclePosition, shape=circle,
+    trunk = GrowBranchingTrunk(currentPosition=lastStumpCirclePosition, initialShape=circle,
                                initialCircleNumber=lastCircleNumber, previousPosition=lastStumpCirclePosition,
                                oldAngles=[0, 0],
                                isMainBranch=0, anglesIntervals=anglesIntervals, currentRayPrecent=100,
