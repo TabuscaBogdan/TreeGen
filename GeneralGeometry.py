@@ -61,20 +61,6 @@ def addVectorToVerts(toupleVector,touplesVertsList):
         new_verts.append(sum_touples(toupleVector,x))
     return new_verts
 
-def addVectorToVertsOnlyXY(toupleVector, toupleVertsList):
-    new_verts = []
-    lstVect = list(toupleVector)
-
-    for x in toupleVertsList:
-        lstVert = list(x)
-        sumXYList=[]
-        sumXYList.append(lstVect[0] + lstVert[0])
-        sumXYList.append( lstVect[1] + lstVert[1])
-        for i in range(2,len(lstVert)):
-            sumXYList.append(lstVect[i])
-        new_verts.append(tuple(sumXYList))
-    return new_verts
-
 def drange(x, y, jump):
     if(x<y):
         while x <= y:
@@ -103,6 +89,22 @@ def ConvertCirclesToVerts(circles):
         verts.extend(circle)
     return verts
 
+
+def CreateShapeOutOfCircleVertexes(nrCircleVertexes, circlesVertexes):
+    nrOfVertexes = len(circlesVertexes)
+    nrOfCircles = nrOfVertexes//nrCircleVertexes
+    faces=[]
+    for circle in range(0,nrOfCircles):
+        for vert in range(0,nrCircleVertexes):
+            if (vert+1+nrCircleVertexes*(circle+1))%nrCircleVertexes!=0:
+                face = (vert + nrCircleVertexes * circle, vert + 1 + circle * nrCircleVertexes,
+                        vert + 1 + nrCircleVertexes * (circle + 1), vert + nrCircleVertexes * (circle + 1))
+            else:
+                face = (vert + nrCircleVertexes * circle, circle * nrCircleVertexes,
+                        nrCircleVertexes * (circle + 1), vert + nrCircleVertexes * (circle + 1))
+
+            faces.append(face)
+    return faces
 
 #======================================Findings==================================================
 def FindMaxRayOfDeformedCircle(deformedCircle):
@@ -184,7 +186,7 @@ def CalculateVertexDeformedCircle(nrCircleVertexes, ray, deformities):
     return circleVerts
 
 
-def CalculateCircleFace(nrCircleVertexes,circleVertexes):
+def CalculateCircleFace(nrCircleVertexes):
     face=(0,)
     for i in range(1,nrCircleVertexes):
         face+=(i,)
@@ -195,22 +197,6 @@ def CalculateCircleFaceending(nrCircleVertexes,circleNumber):
     for i in range(1,nrCircleVertexes):
         face+=(circleNumber*nrCircleVertexes+i,)
     return face
-
-def CreateShapeOutOfCircleVertexes(nrCircleVertexes,circlesVertexes):
-    nrOfVertexes = len(circlesVertexes)
-    nrOfCircles = nrOfVertexes//nrCircleVertexes
-    faces=[]
-    for circle in range(0,nrOfCircles):
-        for vert in range(0,nrCircleVertexes):
-            if((vert+1+nrCircleVertexes*(circle+1))%nrCircleVertexes!=0):
-                face = (vert + nrCircleVertexes * circle, vert + 1 + circle * nrCircleVertexes,
-                        vert + 1 + nrCircleVertexes * (circle + 1), vert + nrCircleVertexes * (circle + 1))
-            else:
-                face = (vert + nrCircleVertexes * circle, circle * nrCircleVertexes,
-                        nrCircleVertexes * (circle + 1), vert + nrCircleVertexes * (circle + 1))
-
-            faces.append(face)
-    return faces
 
 def CreateFaceBetweenTwoCircles(nrCircleVertexes,firstCircle,secondCircle):
     faces =[]
@@ -224,10 +210,27 @@ def CreateFaceBetweenTwoCircles(nrCircleVertexes,firstCircle,secondCircle):
         faces.append(face)
     return faces
 
-
 #==================== Size =====================================
 
 def CalculateResizedDeformedCircle(nrCircleVertexes,ray,precent,deformities=[]):
+    circleVertexes = []
+    fullRotation = math.pi * 2
+    stepRotation = fullRotation / nrCircleVertexes
+
+    for step in range(0, nrCircleVertexes):
+        theta = stepRotation * step
+        if(deformities!=[]):
+            x = (ray+((deformities[step] * precent) / 100)) * math.sin(theta)
+            y = (ray+((deformities[step] * precent) / 100)) * math.cos(theta)
+        else:
+            x = ray * math.sin(theta)
+            y = ray * math.cos(theta)
+
+        vertex = (x, y, 0)
+        circleVertexes.append(vertex)
+    return circleVertexes
+
+def LowerStumpCalculaeResizedDeformedCircle(nrCircleVertexes,ray,precent,deformities=[]):
     circleVertexes = []
     fullRotation = math.pi * 2
     stepRotation = fullRotation / nrCircleVertexes

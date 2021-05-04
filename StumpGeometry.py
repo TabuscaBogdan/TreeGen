@@ -37,7 +37,7 @@ def CalculateLowerStump(nrCircleVertexes,ray,deformities,finese=0.1):
     global lastLowerStumpCirclePrecent
     nrCircles = 0
     for circlePrecent in precents:
-        resizedCircle= geo.CalculateResizedDeformedCircle(nrCircleVertexes, ray, circlePrecent, deformities)
+        resizedCircle= geo.LowerStumpCalculaeResizedDeformedCircle(nrCircleVertexes, ray, circlePrecent, deformities)
         lastLowerStumpCirclePrecent = circlePrecent
         for resizedVertexNr in range(0,nrCircleVertexes):
             resizedCircle[resizedVertexNr]= geo.replace_at_index1(resizedCircle[resizedVertexNr],2,resizedCircle[resizedVertexNr][2]+nrCircles*finese)
@@ -75,7 +75,7 @@ def CalculateUpperStump(nrCircleVertexes,ray,deformities,lastLowerStumpCircle,ab
         for i in range(0,nrCircleVertexes):
             if(smoothDeformities[i]>(maxRay-step*rayReduction)):
                 smoothDeformities[i]=maxRay-step*rayReduction
-        smoothCircle = geo.CalculateResizedDeformedCircle(nrCircleVertexes,ray,precents[step],smoothDeformities)
+        smoothCircle = geo.LowerStumpCalculaeResizedDeformedCircle(nrCircleVertexes,ray,precents[step],smoothDeformities)
         for i in range(0,nrCircleVertexes):
             smoothCircle[i] = geo.replace_at_index1(smoothCircle[i],2,lastLowerStumpCircle[i][2]+(heightStep*(step+1))*abruptness)
         smoothCircles.append(smoothCircle)
