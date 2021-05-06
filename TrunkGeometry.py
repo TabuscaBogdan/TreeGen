@@ -69,6 +69,13 @@ def DetermineZAngleInterval(initialAngles, anglesIntervals):
 
 
 
+def PlaceNewShape(currentPosition, deformities, initialAngles, initialShape, newRayPrecent, taperedRay):
+    shape = geo.CalculateResizedDeformedCircle(len(initialShape), taperedRay, newRayPrecent,
+                                               deformities=deformities)
+    shape = geo.rotateCircleOnSphereAxis(shape, initialAngles)
+    newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
+    return newShapePlacement
+
 def CalculateSplitBranchThickness(nrOfbranches):
     #Most of the time there exists a main branch, when a tree splits,
     thicknessPrecents =[]
@@ -90,16 +97,16 @@ def CalculateSplitBranchThickness(nrOfbranches):
 
 
 
-def Split(currentPosition,circleNumber,anglesIntervals,sphereRayInterval,initialAngles, currentRayPrecent):
+def Split(currentPosition, anglesIntervals, sphereRayInterval, initialAngles, currentRayPrecent):
     branchAngleSections = []
     branches = []
     branchSplitNumber = random.randint(splitInterval[0], splitInterval[1])
 
-    anglesIntervals[1]=[0,math.pi*2]
+    anglesIntervals[1] = [0, math.pi*2]
 
     angleSection = anglesIntervals[1][1]/branchSplitNumber
     deadSection = anglesIntervals[1][1]/(branchSplitNumber+1)
-    spinAngle = random.uniform(0,math.pi)
+    spinAngle = random.uniform(0, math.pi)
     #deadSection = angleSection/branchSplitNumber
 
 
@@ -117,7 +124,6 @@ def Split(currentPosition,circleNumber,anglesIntervals,sphereRayInterval,initial
         branchPrecents[i] = int((currentRayPrecent/100)*branchPrecents[i])
 
         branches[i].append(branchPrecents[i])
-        branches[i].append(circleNumber)
 
         branches[i].append(branchAngleSections[i])
 
@@ -217,7 +223,7 @@ def GrowBranchingTrunk(currentPosition,initialShape,initialCircleNumber,previous
     bodyCilynder = []
     bodyCilynderFaces = []
     leafSegments = []
-    bodyCilynder.append(initialShape)
+
     global currentCircleNumber
     global splitInterval
     global treeSegmentsManager
@@ -250,12 +256,7 @@ def GrowBranchingTrunk(currentPosition,initialShape,initialCircleNumber,previous
     currentPosition = positionAndAngles[0]
     initialAngles = positionAndAngles[1]
 
-
-    shape = geo.CalculateResizedDeformedCircle(len(initialShape), taperedRay, newRayPrecent,
-                                               deformities=deformities)
-    shape = geo.rotateCircleOnSphereAxis(shape, initialAngles)
-    newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
-
+    newShapePlacement = PlaceNewShape(currentPosition, deformities, initialAngles, initialShape, newRayPrecent, taperedRay)
 
     treeSegmentThickness = tsGeo.SegmentThickness(currentRayPrecent, minDeformedCircleRay, newRayPrecent, taperedRay)
     treeSegment = tsGeo.TreeSegment(previousPosition, currentPosition, initialAngles, treeSegmentThickness, geo.CalculateDistanceBetweenTwoPoints(previousPosition, currentPosition))
@@ -264,76 +265,70 @@ def GrowBranchingTrunk(currentPosition,initialShape,initialCircleNumber,previous
     bodyCilynder.append(newShapePlacement)
     currentCircleNumber += 1
 
-    bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), initialCircleNumber, currentCircleNumber))
+    bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(initialShape), initialCircleNumber, currentCircleNumber))
 
     if (taperedRay > stopRaySize) and ((newRayPrecent - 3*rayReductionPrecentPerStep) <= stopCircleRayPrecent):
         treeSegmentsManager.addThinSegment(treeSegment)
 
-    else:
+#========================================================================================================================
+    #==== Split Check ======
+    chanceToSplit = random.randrange(0, 100)
+
+    if chanceToSplit > startingSplitChance:
+        #===== No Split ======
+        startingSplitChance += splichanceGain
         branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber,
-                                                       previousPosition, initialAngles,
-                                                       isMainBranch, anglesIntervals, currentRayPrecent,
-                                                       rayReductionPrecentPerStep, raySphereInterval,
-                                                       startingSplitChance, splitChanceGain, deformities)
+                                                   previousPosition, initialAngles,
+                                                   isMainBranch, anglesIntervals, currentRayPrecent,
+                                                   rayReductionPrecentPerStep, raySphereInterval,
+                                                   startingSplitChance, splitChanceGain, deformities)
         bodyCilynder.extend(branchCirclesAndFaces[0])
-        bodyCilynder.pop(0)
         bodyCilynderFaces.extend(branchCirclesAndFaces[1])
         leafSegments.extend(branchCirclesAndFaces[2])
-#         chanceToSplit = random.randrange(0,100)
-#         if chanceToSplit <= startingSplitChance:
-#             treeSplit = Split(currentPosition, currentCircleNumber, anglesIntervals, rayInterval, initialAngles=[0,0], currentRayPrecent = currentRayPrecent)
-#             previousPosition = currentPosition
-#             for j in range(0,len(treeSplit)):
-#                 currentPosition = treeSplit[j][0]
-#                 initialAngles = treeSplit[j][1]
-#
-#                 deformities = DeformitiesCheck(deformities, initialShape, minDeformedCircleRay)
-#
-#                 currentRayPrecent = treeSplit[j][2]
-#                 previousCircleNumber = treeSplit[j][3]
-#                 sectionAngles = treeSplit[j][4]
-#
-#                 shape = geo.CalculateResizedDeformedCircle(len(shape), minDeformedCircleRay, currentRayPrecent, deformities=deformities)
-#                 shape = geo.rotateCircleOnSphereAxis(shape, initialAngles)
-#                 newShapePlacement = geo.addVectorToVerts(currentPosition, shape)
-#                 bodyCilynder.append(newShapePlacement)
-#                 currentCircleNumber +=1
-#                 bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(shape), previousCircleNumber, currentCircleNumber))
-#                 initialCircleNumber = currentCircleNumber
-#
-#                 branchIdentifier = j + isMainBranch
-# #===========
-# #Extract method here...
-# #===========
-#                 if(branchIdentifier==mainBranch):
-#                     branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber, previousPosition, initialAngles,
-#                                                                branchIdentifier, anglesIntervals, currentRayPrecent,
-#                                                                rayReductionPrecentPerStep, raySphereInterval,
-#                                                                startingSplitChance, splitChanceGain, deformities)
-#                 else:
-#                     deviantAnglesIntervals = DetermineZAngleInterval(initialAngles,anglesIntervals)
-#                     deviantAnglesIntervals[1] = sectionAngles[1]
-#                     branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber, previousPosition, initialAngles,
-#                                                                branchIdentifier, deviantAnglesIntervals, currentRayPrecent,
-#                                                                rayReductionPrecentPerStep, raySphereInterval,
-#                                                                startingSplitChance, splitChanceGain, deformities)
-#
-#                 bodyCilynder.extend(branchCirclesAndFaces[0])
-#                 bodyCilynderFaces.extend(branchCirclesAndFaces[1])
-#                 leafSegments.extend(branchCirclesAndFaces[2])
-#
-#         else:
-#             startingSplitChance += splitChanceGain
-#             branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, initialCircleNumber,
-#                                                        previousPosition, initialAngles,
-#                                                        isMainBranch, anglesIntervals, currentRayPrecent,
-#                                                        rayReductionPrecentPerStep, raySphereInterval,
-#                                                        startingSplitChance, splitChanceGain, deformities)
-#
 
+    else:
+        #==== Split =======
+        treeSplit = Split(currentPosition, anglesIntervals, rayInterval, initialAngles=[0, 0], currentRayPrecent=currentRayPrecent)
+        previousPosition = currentPosition
+        previousCircleNumber = currentCircleNumber
+
+        for branchIndex in range(0, len(treeSplit)):
+            currentPosition = treeSplit[branchIndex][0]
+            initialAngles = treeSplit[branchIndex][1]
+            currentRayPrecent = treeSplit[branchIndex][2]
+            sectionAngles = treeSplit[branchIndex][3]
+
+            deformities = DeformitiesCheck(deformities, initialShape, minDeformedCircleRay)
+
+            newShapePlacement = PlaceNewShape(currentPosition, deformities, initialAngles, initialShape, currentRayPrecent,
+                                              taperedRay)
+
+            bodyCilynder.append(newShapePlacement)
+            currentCircleNumber += 1
+            bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(initialShape), previousCircleNumber, currentCircleNumber))
+
+            branchIdentifier = branchIndex + isMainBranch
+            if branchIdentifier == mainBranch:
+                branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber, previousPosition, initialAngles,
+                                                           branchIdentifier, anglesIntervals, currentRayPrecent,
+                                                           rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain, deformities)
+                bodyCilynder.extend(branchCirclesAndFaces[0])
+                bodyCilynderFaces.extend(branchCirclesAndFaces[1])
+                leafSegments.extend(branchCirclesAndFaces[2])
+            else:
+                deviantAnglesIntervals = DetermineZAngleInterval(initialAngles, anglesIntervals)
+                deviantAnglesIntervals[1] = sectionAngles[1]
+                branchCirclesAndFaces = GrowBranchingTrunk(currentPosition, initialShape, currentCircleNumber,
+                                                           previousPosition, initialAngles, branchIdentifier, deviantAnglesIntervals, currentRayPrecent,
+                                                           rayReductionPrecentPerStep, raySphereInterval, startingSplitChance, splitChanceGain, deformities)
+
+                bodyCilynder.extend(branchCirclesAndFaces[0])
+                bodyCilynderFaces.extend(branchCirclesAndFaces[1])
+                leafSegments.extend(branchCirclesAndFaces[2])
 
     #initial stump face removal
     return [bodyCilynder, bodyCilynderFaces, leafSegments]
+
 
 
 #==============================================================
@@ -448,8 +443,8 @@ barkMutationFactor = 4  #Lower factor = more noticeable, Greater = less noticeab
 
 #Branching
 treeSegmentsManager = tsGeo.TreeSegmentManager()
-stopCircleRayPrecent = 92
-rayReductionPrecentPerStep = 2
+stopCircleRayPrecent = 80
+rayReductionPrecentPerStep = 1
 raySphereInterval = [circleRay,circleRay*2]
 
 anglesIntervals = [[-math.pi/5,math.pi/5],[0,math.pi*2]]
@@ -457,7 +452,7 @@ maxBranchAngleDeviation = math.pi/1.2
 minBranchAngleDeviation = -maxBranchAngleDeviation #anglesIntervals[0][0]
 
 splitInterval = [2,3]
-startingSplitChance = 20
+startingSplitChance = 30
 splichanceGain = 1
 
 mainBranchMinimumThicknessReductionOnSplit =1.1
