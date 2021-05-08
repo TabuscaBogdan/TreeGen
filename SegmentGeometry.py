@@ -21,10 +21,10 @@ class TreeSegmentManager:
         self.terminalSegmentsNumber = 0
         self.terminalSegments = []
 
-    def addThinSegment(self, treeSegment):
+    def AddThinSegment(self, treeSegment):
         self.thinSegmentNumber += 1
         self.thinSegments.append(treeSegment)
 
-    def addTerminalSegment(self, treeSegment):
+    def AddTerminalSegment(self, treeSegment):
         self.terminalSegmentsNumber += 1
         self.terminalSegments.append(treeSegment)

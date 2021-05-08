@@ -321,8 +321,8 @@ def normalizeCircleRotationAnglesTo90(angle):
 
 
 def rotateCircleOnSphereAxis(circle,angles):
-    theta=normalizeCircleRotationAnglesTo90(angles[0])
-    gama=normalizeCircleRotationAnglesTo90(angles[1])
+    theta= angles[0] #normalizeCircleRotationAnglesTo90(angles[0])
+    gama= angles[1] #normalizeCircleRotationAnglesTo90(angles[1])
     sigma= angles[1]
 
     rotationMatrixOnAxis =[[math.cos(theta)+(1-math.cos(theta))*(math.sin(gama)**2), -(1-math.cos(theta))*math.sin(gama)*math.cos(gama), math.sin(sigma)*math.cos(sigma)],
