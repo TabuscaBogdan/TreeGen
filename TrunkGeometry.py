@@ -1,37 +1,41 @@
 import bpy
 import math
 import random
-import gc
 
 #comment in blender
 # import GeneralGeometry as geo
 # import StumpGeometry as sGeo
 # import SegmentGeometry as tsGeo
+# import FoliageGeometry as fGeo
 #=================
 # comment in debug
-utilityScriptPath= "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\GeneralGeometry.py"
 
 import importlib.util
+utilityScriptPath = "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\GeneralGeometry.py"
 utilitySpec = importlib.util.spec_from_file_location("GeneralGeometry", utilityScriptPath)
 geo = importlib.util.module_from_spec(utilitySpec)
 utilitySpec.loader.exec_module(geo)
 
-stumpScriptPath= "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\StumpGeometry.py"
+stumpScriptPath = "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\StumpGeometry.py"
 stumpSpec = importlib.util.spec_from_file_location("StumpGeometry", stumpScriptPath)
 sGeo = importlib.util.module_from_spec(stumpSpec)
 stumpSpec.loader.exec_module(sGeo)
 
-segmentScriptPath= "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\SegmentGeometry.py"
+segmentScriptPath = "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\SegmentGeometry.py"
 segmentSpec = importlib.util.spec_from_file_location("SegmentGeometry", segmentScriptPath)
 tsGeo = importlib.util.module_from_spec(segmentSpec)
 segmentSpec.loader.exec_module(tsGeo)
+
+foliageScriptPath = "C:\\Users\\Bogdan\\PycharmProjects\\BlendScriptAttempt\\FoliageGeometry.py"
+foliageSpec = importlib.util.spec_from_file_location("FoliageGeometry", foliageScriptPath)
+fGeo = importlib.util.module_from_spec(foliageSpec)
+foliageSpec.loader.exec_module(fGeo)
 
 #=================
 
 verts = []
 faces = []
 edges = []
-treeObjects = []
 
 
 def DeformitiesCheck(deformities,initialShape,minDeformedCircleRay):
@@ -128,90 +132,6 @@ def Split(currentPosition, anglesIntervals, sphereRayInterval, initialAngles, cu
         branches[i].append(branchAngleSections[i])
 
     return branches
-
-def JoinTreeObjectsWithTree(tree):
-    global treeObjects
-    #join leaf with Trunk
-    tree.select_set(True)
-    bpy.context.view_layer.objects.active = tree
-    for treeObject in treeObjects:
-        treeObject.select_set(True)
-
-    bpy.ops.object.join()
-    bpy.ops.object.select_all(action='DESELECT')
-    treeObjects = []
-
-def AddLeaf(angles, extraRotation, endPoint, scene, sourceObject):
-    xRot=extraRotation[0]
-    yRot=extraRotation[1]
-    zRot=extraRotation[2]
-
-    global treeObjects
-
-    newObject = sourceObject.copy()
-    newObject.data = sourceObject.data.copy()
-    newObject.location = endPoint
-    eulerAngles = geo.getEulerAnglesFromSphereAngles(angles)
-    #newObject.rotation_euler = (eulerAngles[0]+xRot, eulerAngles[1]+yRot, eulerAngles[2]+zRot)
-    newObject.rotation_euler = (xRot, yRot, eulerAngles[2] + zRot)
-    # newObject.parent = parentObject
-    scene.collection.objects.link(newObject)
-    treeObjects.append(newObject)
-
-
-def GrowLeaves(TreeMeshName,LeafMeshName,hasEndingLeaf=1):
-    scene = bpy.context.scene
-    sourceObject = bpy.data.objects[LeafMeshName]
-    parentObject = bpy.data.objects[TreeMeshName]
-
-    global treeSegmentsManager
-
-    for segment in treeSegmentsManager.terminalSegments:
-
-        startPoint = segment.initialPoint
-        angles = segment.angles
-        endPoint = segment.endPoint
-        distance = geo.CalculateDistanceBetweenTwoPoints(startPoint,endPoint)
-
-        deviation = random.randint(0, 360)
-        zLeafRotation = (math.pi / 180) * deviation
-        xLeafRotation, yLeafRotation = WindDeviation()
-        extraRotation = [xLeafRotation, yLeafRotation, zLeafRotation]
-
-        if(hasEndingLeaf!=0):
-            AddLeaf(angles, extraRotation , endPoint, scene, sourceObject)
-
-        leafNumber = random.randint(leavesPerBranch[0],leavesPerBranch[1])
-        unitDistance = (distance/leavesPerBranch[1])/leavesDistance
-        position = endPoint
-        for i in range(0,leafNumber):
-            if(i%2==1):
-                leafDistance = (distance-(unitDistance * i))/distance
-                x = startPoint[0]+leafDistance*(endPoint[0]-startPoint[0])
-                y = startPoint[1] + leafDistance * (endPoint[1] - startPoint[1])
-                z = startPoint[2] + leafDistance * (endPoint[2] - startPoint[2])
-                position = tuple([x,y,z])
-
-                deviation = random.randint(leafRotationAngleDeviation[0],leafRotationAngleDeviation[1])
-                zLeafRotation =(math.pi/180)*90+(math.pi/180)*deviation +extraRotation[2]
-                xLeafRotation, yLeafRotation = WindDeviation()
-                secondaryRotations = [xLeafRotation, yLeafRotation, zLeafRotation]
-
-                AddLeaf(angles, secondaryRotations, position, scene, sourceObject)
-            else:
-                deviation = random.randint(leafRotationAngleDeviation[0], leafRotationAngleDeviation[1])
-                zLeafRotation = math.pi + (math.pi / 180) * deviation+extraRotation[2]
-                xLeafRotation, yLeafRotation = WindDeviation()
-                secondaryRotations = [xLeafRotation, yLeafRotation, zLeafRotation]
-                AddLeaf(angles, secondaryRotations, position, scene, sourceObject)
-
-
-def WindDeviation():
-    minorDeviation = random.randint(int(leafRotationAngleDeviation[0] / 2), int(leafRotationAngleDeviation[1] / 2))
-    yLeafRotation = (math.pi / 180) * minorDeviation
-    minorDeviation = random.randint(int(leafRotationAngleDeviation[0] / 2), int(leafRotationAngleDeviation[1] / 2))
-    xLeafRotation = (math.pi / 180) * minorDeviation
-    return xLeafRotation, yLeafRotation
 
 def Taper(raySize, taperRayPrecent):
     if taperRayPrecent>0:
@@ -434,8 +354,8 @@ def CreateTree():
     mymesh.from_pydata(verts, edges, faces)
     mymesh.update(calc_edges=True)
 
-    GrowLeaves("Tree", leafObjectName)
-    JoinTreeObjectsWithTree(myobject)
+    fGeo.SetFoliageParameters(treeSegmentsManager, "Tree", leafObjectName, leavesPerBranch, leavesDistance, leafRotationAngleDeviation)
+    fGeo.GrowFoliage(myobject)
 
 
 #====Globals=====
@@ -467,7 +387,7 @@ splichanceGain = 0.5
 mainBranchMinimumThicknessReductionOnSplit =1.1
 secondaryBranchMinimumThicknessReductionOnSplit = 1.1
 #Leaves
-leafRayStart = 5
+leafRayStart = 10
 leavesPerBranch = [5,10]
 leavesDistance = 1# greater number = smaller distance between leaves
 leafRotationAngleDeviation = [-30,30]
