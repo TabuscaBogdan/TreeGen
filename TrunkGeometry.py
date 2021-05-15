@@ -217,6 +217,7 @@ def GrowBranchingTrunk(currentPosition,initialShape,initialCircleNumber,stopRayS
         treeSplit = Split(currentPosition, anglesIntervals, rayInterval, initialAngles=[0, 0], currentRayPrecent=currentRayPrecent)
         previousPosition = currentPosition
         previousCircleNumber = currentCircleNumber
+        previousRayPrecent = currentRayPrecent
 
         for branchIndex in range(0, len(treeSplit)):
             currentPosition = treeSplit[branchIndex][0]
@@ -226,12 +227,21 @@ def GrowBranchingTrunk(currentPosition,initialShape,initialCircleNumber,stopRayS
 
             deformities = DeformitiesCheck(deformities, initialShape, minDeformedCircleRay)
 
+            taperedRay = Taper(minDeformedCircleRay, currentRayPrecent)
+
             newShapePlacement = PlaceNewShape(currentPosition, deformities, initialAngles, initialShape, currentRayPrecent,
                                               taperedRay)
 
             bodyCilynder.append(newShapePlacement)
             currentCircleNumber += 1
             bodyCilynderFaces.extend(geo.CreateFaceBetweenTwoCircles(len(initialShape), previousCircleNumber, currentCircleNumber))
+
+
+            treeSegmentThickness = tsGeo.SegmentThickness(previousRayPrecent, minDeformedCircleRay, currentRayPrecent, taperedRay)
+            treeSegment = tsGeo.TreeSegment(previousPosition, currentPosition, initialAngles, treeSegmentThickness,
+                                            geo.CalculateDistanceBetweenTwoPoints(previousPosition, currentPosition))
+            if (taperedRay < leafRaySize) and (taperedRay > stopRaySize):
+                treeSegmentsManager.AddThinSegment(treeSegment)
 
             branchIdentifier = branchIndex + isMainBranch
             if branchIdentifier == mainBranch:
@@ -290,7 +300,8 @@ def SetTreeProperties(TreeGeneralProp,TreeBarkProp,TreeBranchingProp,TreeLeavesP
     splichanceGain = TreeBranchingProp.splitChanceGain
     #==============
     #===Leaves===
-    global leavesPerBranch, leavesDistance, leafRotationAngleDeviation, leafObjectName
+    global leavesPerBranch, leavesDistance, leafRotationAngleDeviation, leafObjectName, leafRayStart
+    leafRayStart = TreeLeavesProp.leafRayPrecentStartingPoint
     leavesPerBranch = [TreeLeavesProp.leavesPerBranchInferiorLimit, TreeLeavesProp.leavesPerBranchSuperiorLimit]
     leavesDistance = TreeLeavesProp.leavesDistance
     leafObjectName = TreeLeavesProp.leafObjectName

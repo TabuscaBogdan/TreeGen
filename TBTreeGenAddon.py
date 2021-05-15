@@ -80,6 +80,13 @@ class TreeBarkProperties(PropertyGroup):
     )
 
 class TreeLeavesProperties(PropertyGroup):
+    leafRayPrecentStartingPoint: IntProperty(
+        name= "Start Leaf Ray Precent",
+        description="The thickness precentage from which leaves will start growing,(MUST be higher than STOP RAY PRECENTAGE)",
+        default=10,
+        min=2,
+        max=50,
+    )
     leavesPerBranchInferiorLimit: IntProperty(
         name="Minimum Number of Leaves Per Branch",
         description="How many Leaves will certainly be on a Branch",
@@ -233,6 +240,7 @@ class TreeLeavesPropertiesPanel(TreeCreationPannel, Panel):
         scene = context.scene
         treeTool = scene.treeToolLeaves
 
+        layout.prop(treeTool, "leafRayPrecentStartingPoint")
         layout.prop(treeTool, "leavesPerBranchInferiorLimit")
         layout.prop(treeTool, "leavesPerBranchSuperiorLimit")
         layout.prop(treeTool, "leavesDistance")

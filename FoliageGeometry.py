@@ -34,19 +34,27 @@ def JoinTreeObjectsWithTree(tree):
     bpy.ops.object.select_all(action='DESELECT')
     treeObjects = []
 
-def AddLeaf(angles, extraRotation, endPoint, scene, sourceObject):
-    xRot=extraRotation[0]
-    yRot=extraRotation[1]
-    zRot=extraRotation[2]
+def refineEulerAngles(angles):
+    #sign = (angles[0] > 0) - (angles[0] < 0)
+    #xRot = sign * (abs(angles[0]) % math.pi)
+    xRot = 0
 
+    #sign = (angles[1] > 0) - (angles[1] < 0)
+    #yRot = sign * (abs(angles[1]) % math.pi)
+    yRot = 0
+
+    zRot = angles[2]
+
+    return [xRot, yRot, zRot]
+
+def AddLeaf(angles, endPoint, scene, sourceObject):
     global treeObjects
 
     newObject = sourceObject.copy()
     newObject.data = sourceObject.data.copy()
     newObject.location = endPoint
-    eulerAngles = geo.getEulerAnglesFromSphereAngles(angles)
-    #newObject.rotation_euler = (eulerAngles[0]+xRot, eulerAngles[1]+yRot, eulerAngles[2]+zRot)
-    newObject.rotation_euler = (xRot, yRot, eulerAngles[2] + zRot)
+
+    newObject.rotation_euler = (angles[0], angles[1], angles[2])
     # newObject.parent = parentObject
     scene.collection.objects.link(newObject)
     treeObjects.append(newObject)
@@ -58,7 +66,7 @@ def WindDeviation():
     xLeafRotation = (math.pi / 180) * minorDeviation
     return xLeafRotation, yLeafRotation
 
-def GrowLeaves(TreeMeshName,LeafMeshName,hasEndingLeaf=1,useThinSegments=False):
+def GrowLeaves(TreeMeshName,LeafMeshName, useThinSegments=False):
     scene = bpy.context.scene
     sourceObject = bpy.data.objects[LeafMeshName]
     parentObject = bpy.data.objects[TreeMeshName]
@@ -70,6 +78,7 @@ def GrowLeaves(TreeMeshName,LeafMeshName,hasEndingLeaf=1,useThinSegments=False):
         hasEndingLeaf = 0
     else:
         treeSegments = treeSegmentsManager.terminalSegments
+        hasEndingLeaf = 1
     for segment in treeSegments:
 
         startPoint = segment.initialPoint
@@ -83,40 +92,52 @@ def GrowLeaves(TreeMeshName,LeafMeshName,hasEndingLeaf=1,useThinSegments=False):
         extraRotation = [xLeafRotation, yLeafRotation, zLeafRotation]
 
         if(hasEndingLeaf!=0):
-            AddLeaf(angles, extraRotation , endPoint, scene, sourceObject)
+            eulerAngles = geo.getEulerAnglesFromSphereAngles(angles)
+            AddLeaf(eulerAngles, endPoint, scene, sourceObject)
 
-        leafNumber = random.randint(leavesPerBranch[0],leavesPerBranch[1])
-        unitDistance = (distance/leavesPerBranch[1])/leavesDistance
-        position = endPoint
-        for i in range(0,leafNumber):
+        leafNumber = random.randint(leavesPerBranch[0], leavesPerBranch[1])
+        maxLeavesPairs = leavesPerBranch[1]/2
+        if maxLeavesPairs == 0:
+            maxLeavesPairs += 1
+
+        unitDistance = (distance/maxLeavesPairs)/leavesDistance
+        for i in range(0, leafNumber):
+            leafDistance = (distance - (unitDistance * (i/2))) / distance
+            x = startPoint[0] + leafDistance * (endPoint[0] - startPoint[0])
+            y = startPoint[1] + leafDistance * (endPoint[1] - startPoint[1])
+            z = startPoint[2] + leafDistance * (endPoint[2] - startPoint[2])
+            position = tuple([x, y, z])
+
             if i % 2 == 1:
-                leafDistance = (distance-(unitDistance * i))/distance
-                x = startPoint[0]+leafDistance*(endPoint[0]-startPoint[0])
-                y = startPoint[1] + leafDistance * (endPoint[1] - startPoint[1])
-                z = startPoint[2] + leafDistance * (endPoint[2] - startPoint[2])
-                position = tuple([x,y,z])
-
                 deviation = random.randint(leafRotationAngleDeviation[0],leafRotationAngleDeviation[1])
-                zLeafRotation =(math.pi/180)*90+(math.pi/180)*deviation + extraRotation[2]
+                zLeafRotation = (math.pi/180)*deviation + extraRotation[2]
                 xLeafRotation, yLeafRotation = WindDeviation()
-                secondaryRotations = [xLeafRotation, yLeafRotation, zLeafRotation]
 
-                AddLeaf(angles, secondaryRotations, position, scene, sourceObject)
+                eulerAngles = geo.getEulerAnglesFromSphereAngles(angles)
+                eulerAngles = refineEulerAngles(eulerAngles)
+                eulerAngles = [eulerAngles[0] + xLeafRotation, eulerAngles[1] + yLeafRotation, eulerAngles[2] + zLeafRotation]
+
+                AddLeaf(eulerAngles, position, scene, sourceObject)
             else:
                 deviation = random.randint(leafRotationAngleDeviation[0], leafRotationAngleDeviation[1])
                 zLeafRotation = math.pi + (math.pi / 180) * deviation + extraRotation[2]
                 xLeafRotation, yLeafRotation = WindDeviation()
-                secondaryRotations = [xLeafRotation, yLeafRotation, zLeafRotation]
-                AddLeaf(angles, secondaryRotations, position, scene, sourceObject)
+
+                eulerAngles = geo.getEulerAnglesFromSphereAngles(angles)
+                eulerAngles = refineEulerAngles(eulerAngles)
+                eulerAngles = [eulerAngles[0] + xLeafRotation, eulerAngles[1] + yLeafRotation,
+                               eulerAngles[2] + zLeafRotation]
+
+                AddLeaf(eulerAngles, position, scene, sourceObject)
 
 
 def GrowFoliage(treeObject):
-    if (leafMeshName == "") or (leafMeshName is not None):
+    if (leafMeshName == "") or (leafMeshName is None):
         return
 
     start_time = time.time()
-    GrowLeaves(treeMeshName, leafMeshName, hasEndingLeaf=1, useThinSegments=False)
-    GrowLeaves(treeMeshName, leafMeshName, hasEndingLeaf=0, useThinSegments=True)
+    GrowLeaves(treeMeshName, leafMeshName, useThinSegments=False)
+    GrowLeaves(treeMeshName, leafMeshName, useThinSegments=True)
     print("Grow Leaves Execution time: %s" % (time.time() - start_time))
     start_time = time.time()
     JoinTreeObjectsWithTree(treeObject)
